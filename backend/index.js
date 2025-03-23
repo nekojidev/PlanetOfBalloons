@@ -25,6 +25,8 @@ import userRoutes from './routes/userRoutes.js'
 import productRoutes from './routes/productRoutes.js'
 import orderRoutes from './routes/orderRoutes.js'
 import categoryRoutes from './routes/categoryRoutes.js'
+import announcementsRoutes from './routes/announcementRoutes.js'
+import promotionsRoutes from './routes/promotionRoutes.js'
 
 //middleware
 import notFoundMiddleware from './middleware/notFoundMiddleware.js';
@@ -53,6 +55,8 @@ app.use('/api/v1/users', userRoutes )
 app.use('/api/v1/products', productRoutes )
 app.use('/api/v1/orders', orderRoutes )
 app.use('/api/v1/categories', categoryRoutes )
+app.use('/api/v1/announcements', announcementsRoutes)
+app.use('/api/v1/promotions', promotionsRoutes)
 
 
 app.use(notFoundMiddleware)
