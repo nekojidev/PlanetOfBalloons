@@ -1,6 +1,6 @@
 import mongoose from "mongoose"
 import bcrypt from "bcryptjs"
-const validator = require('validator');
+import validator from "validator"
 
 const userSchema = new mongoose.Schema(
     {
@@ -24,6 +24,15 @@ const userSchema = new mongoose.Schema(
             required: [true, 'Please provide a password'],
             minLength: 6,
          },
+            phone: {
+                type: String,
+                required: [true, 'Please provide your phone number'],
+                unique: true,
+                validate: {
+                    validator: validator.isMobilePhone,
+                    message: 'Please provide a valid phone number'
+                }
+            },
          role: {
             type: String,
             enum: ['admin', 'user'],
@@ -38,13 +47,14 @@ const userSchema = new mongoose.Schema(
 // pre save 
 
 userSchema.pre('save', async function(next) {
+    if (!this.isModified('password')) return;
     this.password = await bcrypt.hash(this.password, 10)
     next()
 })
 
 //match password
 
-userSchema.methods.matchPassword = async function(enteredPassword) {
+userSchema.methods.comparePassword = async function(enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password)
 }
 
