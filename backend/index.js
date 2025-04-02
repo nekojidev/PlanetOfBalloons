@@ -1,10 +1,14 @@
 import dotenv from 'dotenv';
 import 'express-async-errors'
 dotenv.config();
+//for callback test
+const PORT =  process.env.PORT || 3000 
 
 //express
 import express from 'express';
 const app = express();
+
+
 
 //rest of packages
 import { connectDB } from './config/db.js';
@@ -31,7 +35,7 @@ import promotionsRoutes from './routes/promotionRoutes.js'
 //middleware
 import notFoundMiddleware from './middleware/notFoundMiddleware.js';
 import errorHandlerMiddleware from './middleware/errorHandlerMiddleware.js';
-
+import { schedulePromotionRevert } from './middleware/cronJobs.js';
 // app.set('trust proxy', 1);
 app.use(
     rateLimiter({
@@ -63,8 +67,9 @@ app.use('/api/v1/promotions', promotionsRoutes)
 
 app.use(notFoundMiddleware)
 app.use(errorHandlerMiddleware)
+schedulePromotionRevert()
 
-const PORT =  process.env.PORT || 3000 
+
 
 
 

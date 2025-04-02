@@ -4,9 +4,10 @@ import {
   getPromotions,
   getPromotionById,
   updatePromotion,
-  deletePromotion
+  deletePromotion,
+  addProductToPromotion
 } from "../controllers/promotionController.js";
-// import { protect, admin } from "../middleware/authMiddleware.js";
+import { authenticateUser, authorizeRoles } from "../middleware/authentication.js";
 
 const router = express.Router();
 
@@ -17,12 +18,15 @@ router.get("/", getPromotions);
 router.get("/:id", getPromotionById);
 
 // Додати нову акцію (адмін)
-router.post("/", createPromotion);
+router.post("/", authenticateUser, authorizeRoles('admin'),  createPromotion);
 
 // Оновити акцію (адмін)
-router.patch("/:id", updatePromotion);
+router.patch("/:id", authenticateUser, authorizeRoles('admin'),  updatePromotion);
 
 // Видалити акцію (адмін)
-router.delete("/:id",deletePromotion);
+router.delete("/:id",authenticateUser, authorizeRoles('admin') ,deletePromotion);
+
+// Add products to an existing promotion
+router.post("/:id/products",authenticateUser, authorizeRoles('admin') , addProductToPromotion);
 
 export default router;
