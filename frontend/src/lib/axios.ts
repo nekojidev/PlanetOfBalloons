@@ -1,9 +1,10 @@
-import axios from "axios"
+import axios from "axios";
 
-const instance = axios.create({
+// Fix the environment variable reference
+const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1",
   withCredentials: true,
-})
+});
 
-export default instance
+export default axiosInstance;
 
