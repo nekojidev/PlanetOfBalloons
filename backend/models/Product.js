@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema(
@@ -8,8 +7,13 @@ const productSchema = new mongoose.Schema(
     price: { type: Number, required: true, default: 0 },
     originalPrice: { type: Number },
     image: { type: String, required: true },
+    cloudinaryId: {
+      type: String,
+      default: '',
+    },
     category: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
-    stock: { type: Number, required: true, default: 0 }
+    stock: { type: Number, required: true, default: 0 },
+    popular: { type: Boolean, default: false } // Add this field
   },
   { timestamps: true }
 );

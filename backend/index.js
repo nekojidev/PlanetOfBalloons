@@ -1,5 +1,8 @@
 import dotenv from 'dotenv';
 import 'express-async-errors'
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 dotenv.config();
 //for callback test
 const PORT =  process.env.PORT || 3000 
@@ -22,6 +25,7 @@ import mongoSanitize from 'express-mongo-sanitize';
 import xss from 'xss-clean';
 
 
+
 //routes
 
 import authRoutes from './routes/authRoutes.js'
@@ -36,21 +40,28 @@ import promotionsRoutes from './routes/promotionRoutes.js'
 import notFoundMiddleware from './middleware/notFoundMiddleware.js';
 import errorHandlerMiddleware from './middleware/errorHandlerMiddleware.js';
 import { schedulePromotionRevert } from './middleware/cronJobs.js';
-// app.set('trust proxy', 1);
+app.set('trust proxy', 1);
+
+app.use(cors({
+    origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'https://edde-79-110-129-5.ngrok-free.app'], // Add your frontend URLs here
+    credentials: true
+}))
+
 app.use(
     rateLimiter({
         windowMs: 15* 60 * 1000,
-        max: 100,
+        max: 200,
     })
 )
 app.use(helmet())
-app.use(cors())
+
 app.use(xss())
 app.use(mongoSanitize())
 app.use(morgan('dev'))
 
 
 app.use(express.json())
+app.use(express.urlencoded({ extended: true })) // Add this line to parse form data
 app.use(cookieParser(process.env.JWT_SECRET))
 
 app.use(fileUpload())
