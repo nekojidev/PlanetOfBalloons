@@ -1,6 +1,8 @@
 # Planet of Balloons 🎈
 
-![Planet of Balloons Logo](https://cdn.pixabay.com/animation/2023/02/11/17/56/17-56-09-475_512.gif)
+<div align="center">
+    <img src="https://cdn.pixabay.com/photo/2023/02/11/17/56/balloon-planet-logo-512.png" alt="Planet of Balloons Logo" width="200" />
+</div>
 
 Planet of Balloons is a full-stack e-commerce platform for a balloon store, offering a wide range of balloons and accessories for various occasions. The application provides both customer-facing features and admin management tools.
 
