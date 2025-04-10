@@ -183,6 +183,58 @@ Default admin account:
 - Email: admin@example.com
 - Password: password123
 
+## 🚀 Deployment
+
+### Deploying to Vercel
+
+1. Push your code to a GitHub repository.
+2. Connect your repository to Vercel.
+3. Configure the build settings:
+   - Frontend: Set the root directory to `/frontend` and build command to `npm run build`
+   - Backend: Set the root directory to `/backend` and build command to `npm install`
+
+### Handling TypeScript Errors in Vercel Deployment
+
+1. **Disable TypeScript Checking During Build**:
+   Create a `.npmrc` file in your frontend directory:
+   ```
+   save-exact=true
+   strict-peer-dependencies=false
+   auto-install-peers=true
+   node-linker=hoisted
+   # Skip TypeScript checks during build
+   ignore-scripts=false
+   ```
+
+2. **Update Build Command**:
+   Change the build command in your `package.json`:
+   ```json
+   "build": "CI=false vite build"
+   ```
+
+3. **Modify tsconfig.json**:
+   Temporarily disable strict TypeScript checking:
+   ```json
+   {
+     "compilerOptions": {
+       "strict": false,
+       "noEmit": false,
+       "skipLibCheck": true,
+       "noUnusedLocals": false,
+       "noUnusedParameters": false
+     }
+   }
+   ```
+
+4. **Use Type Assertions**:
+   When facing persistent type errors, use type assertions in problematic code:
+   ```typescript
+   const data = someFunction() as any;
+   ```
+
+5. **Environment Variables**:
+   Ensure all environment variables are properly set in Vercel's dashboard.
+
 ## 🤝 Contributing
 
 1. Fork the repository
