@@ -44,7 +44,7 @@ import { schedulePromotionRevert } from './middleware/cronJobs.js';
 app.set('trust proxy', 1);
 
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'https://edde-79-110-129-5.ngrok-free.app'], // Add your frontend URLs here
+    origin: [process.env.CLIENT_URL], // Add your frontend URLs here
     credentials: true
 }))
 
