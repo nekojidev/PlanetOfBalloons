@@ -20,7 +20,7 @@ router.get("/:id", getAnnouncementById);
 router.post("/",authenticateUser, authorizeRoles('admin'), createAnnouncement);
 
 // Оновити оголошення (адмін)
-router.patch("/:id",authenticateUser, authorizeRoles('admin'), updateAnnouncement);
+router.put("/:id",authenticateUser, authorizeRoles('admin'), updateAnnouncement);
 
 // Видалити оголошення (адмін)
 router.delete("/:id",authenticateUser, authorizeRoles('admin'), deleteAnnouncement);

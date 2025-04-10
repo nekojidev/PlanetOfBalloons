@@ -66,8 +66,10 @@ const AdminOrders = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false)
+  const [isPaymentUpdateDialogOpen, setIsPaymentUpdateDialogOpen] = useState(false)
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
   const [newStatus, setNewStatus] = useState("")
+  const [newPaymentStatus, setNewPaymentStatus] = useState("")
   const { toast } = useToast()
 
   useEffect(() => {
@@ -95,6 +97,12 @@ const AdminOrders = () => {
     setSelectedOrder(order)
     setNewStatus(order.status)
     setIsUpdateDialogOpen(true)
+  }
+
+  const handleUpdatePaymentStatus = (order: Order) => {
+    setSelectedOrder(order)
+    setNewPaymentStatus(order.paymentStatus)
+    setIsPaymentUpdateDialogOpen(true)
   }
 
   const handleViewDetails = (order: Order) => {
@@ -127,6 +135,34 @@ const AdminOrders = () => {
       })
     } finally {
       setIsUpdateDialogOpen(false)
+    }
+  }
+
+  const confirmUpdatePaymentStatus = async () => {
+    if (!selectedOrder) return
+
+    try {
+      const response = await axios.patch(`/orders/${selectedOrder._id}`, {
+        paymentStatus: newPaymentStatus,
+      })
+
+      setOrders((prev) =>
+        prev.map((o) => (o._id === selectedOrder._id ? { ...o, paymentStatus: response.data.order.paymentStatus } : o)),
+      )
+
+      toast({
+        title: "Успішно",
+        description: "Статус оплати оновлено",
+      })
+    } catch (error) {
+      console.error("Error updating payment status:", error)
+      toast({
+        title: "Помилка",
+        description: "Не вдалося оновити статус оплати",
+        variant: "destructive",
+      })
+    } finally {
+      setIsPaymentUpdateDialogOpen(false)
     }
   }
 
@@ -190,6 +226,32 @@ const AdminOrders = () => {
     }
   }
 
+  const getDeliveryMethodName = (method: string) => {
+    switch (method) {
+      case 'pickup':
+        return 'Самовивіз';
+      case 'courier':
+        return 'Кур\'єр';
+      case 'novaPoshta':
+        return 'Нова Пошта';
+      case 'ukrPoshta':
+        return 'Укрпошта';
+      default:
+        return method;
+    }
+  }
+  
+  const getPaymentMethodName = (method: string) => {
+    switch (method) {
+      case 'liqpay':
+        return 'LiqPay';
+      case 'cashOnDelivery':
+        return 'Оплата при отриманні';
+      default:
+        return method;
+    }
+  }
+
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -219,7 +281,7 @@ const AdminOrders = () => {
             <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue placeholder="Фільтр за статусом" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white" >
               <SelectItem value="all">Всі статуси</SelectItem>
               <SelectItem value="Pending">Очікує</SelectItem>
               <SelectItem value="Processing">Обробляється</SelectItem>
@@ -287,6 +349,9 @@ const AdminOrders = () => {
                         <Button variant="outline" onClick={() => handleUpdateStatus(order)}>
                           Змінити статус
                         </Button>
+                        <Button variant="outline" onClick={() => handleUpdatePaymentStatus(order)}>
+                          Статус оплати
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -309,7 +374,7 @@ const AdminOrders = () => {
               <SelectTrigger>
                 <SelectValue placeholder="Виберіть статус" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-50 bg-white " >
                 <SelectItem value="Pending">Очікує</SelectItem>
                 <SelectItem value="Processing">Обробляється</SelectItem>
                 <SelectItem value="Shipped">Відправлено</SelectItem>
@@ -329,71 +394,188 @@ const AdminOrders = () => {
 
       {/* Order Details Dialog */}
       <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
-        <DialogContent className="sm:max-w-[700px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Деталі замовлення #{selectedOrder?._id.slice(-6)}</DialogTitle>
             <DialogDescription>Створено: {selectedOrder && formatDate(selectedOrder.createdAt)}</DialogDescription>
           </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div>
-              <h3 className="font-medium mb-2">Інформація про клієнта</h3>
-              {selectedOrder && (
-                <div className="text-sm">
-                  <p>
-                    <span className="font-medium">Ім'я:</span> {selectedOrder.user.name}
-                  </p>
-                  <p>
-                    <span className="font-medium">Email:</span> {selectedOrder.user.email}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <h3 className="font-medium mb-2">Статус замовлення</h3>
-              <div className="flex gap-2">
+          <div className="py-4 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-lg font-medium mb-2">Інформація про клієнта</h3>
                 {selectedOrder && (
-                  <>
-                    <Badge className={getStatusColor(selectedOrder.status)}>
-                      {translateStatus(selectedOrder.status)}
-                    </Badge>
-                    <Badge className={getPaymentStatusColor(selectedOrder.paymentStatus)}>
-                      {translatePaymentStatus(selectedOrder.paymentStatus)}
-                    </Badge>
-                  </>
+                  <div className="text-sm space-y-1">
+                    <p>
+                      <span className="font-medium">Ім'я:</span> {selectedOrder.user.name}
+                    </p>
+                    <p>
+                      <span className="font-medium">Email:</span> {selectedOrder.user.email}
+                    </p>
+                  </div>
                 )}
               </div>
+
+              <div>
+                <h3 className="text-lg font-medium mb-2">Статус замовлення</h3>
+                <div className="flex flex-wrap gap-2">
+                  {selectedOrder && (
+                    <>
+                      <Badge className={getStatusColor(selectedOrder.status)}>
+                        {translateStatus(selectedOrder.status)}
+                      </Badge>
+                      <Badge className={getPaymentStatusColor(selectedOrder.paymentStatus)}>
+                        {translatePaymentStatus(selectedOrder.paymentStatus)}
+                      </Badge>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <div>
-              <h3 className="font-medium mb-2">Товари</h3>
-              <div className="space-y-2">
-                {selectedOrder?.orderItems.map((item, index) => (
-                  <div key={index} className="flex justify-between py-2 border-b last:border-0">
-                    <div>
-                      <p className="font-medium">{item.product.name}</p>
-                      <p className="text-sm text-muted-foreground">Кількість: {item.amount}</p>
-                    </div>
-                    <div className="text-right">
-                      <p>{formatPrice(item.product.price)}</p>
-                      <p className="font-medium">{formatPrice(item.product.price * item.amount)}</p>
-                    </div>
+            {selectedOrder && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Спосіб доставки</h3>
+                  <div className="text-sm space-y-1">
+                    <p>
+                      <span className="font-medium">Метод:</span> {getDeliveryMethodName(selectedOrder.deliveryMethod)}
+                    </p>
+                    <p>
+                      <span className="font-medium">Адреса:</span> {selectedOrder.shippingAddress.address}
+                    </p>
+                    <p>
+                      <span className="font-medium">Місто:</span> {selectedOrder.shippingAddress.city}
+                    </p>
+                    <p>
+                      <span className="font-medium">Індекс:</span> {selectedOrder.shippingAddress.postalCode}
+                    </p>
+                    <p>
+                      <span className="font-medium">Телефон:</span> {selectedOrder.shippingAddress.phone}
+                    </p>
+                    {selectedOrder.shippingAddress.novaPoshtaOffice && (
+                      <p>
+                        <span className="font-medium">Відділення Нової Пошти:</span> {selectedOrder.shippingAddress.novaPoshtaOffice}
+                      </p>
+                    )}
+                    {selectedOrder.shippingAddress.ukrPoshtaOffice && (
+                      <p>
+                        <span className="font-medium">Відділення Укрпошти:</span> {selectedOrder.shippingAddress.ukrPoshtaOffice}
+                      </p>
+                    )}
                   </div>
-                ))}
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Оплата</h3>
+                  <div className="text-sm space-y-1">
+                    <p>
+                      <span className="font-medium">Метод оплати:</span> {getPaymentMethodName(selectedOrder.paymentMethod)}
+                    </p>
+                    <p>
+                      <span className="font-medium">Статус оплати:</span> {translatePaymentStatus(selectedOrder.paymentStatus)}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between pt-4 font-medium">
-                <p>Загальна сума:</p>
-                <p>{selectedOrder && formatPrice(selectedOrder.totalPrice)}</p>
+            )}
+
+            {selectedOrder?.notes && (
+              <div>
+                <h3 className="text-lg font-medium mb-2">Примітки до замовлення</h3>
+                <div className="p-3 bg-muted rounded-md text-sm">
+                  {selectedOrder.notes}
+                </div>
               </div>
+            )}
+
+            <div>
+              <h3 className="text-lg font-medium mb-2">Товари</h3>
+              <div className="space-y-2 border rounded-md p-3">
+                {selectedOrder?.orderItems && selectedOrder.orderItems.length > 0 ? (
+                  selectedOrder.orderItems.map((item, index) => (
+                    <div key={index} className="flex justify-between py-2 border-b last:border-0">
+                      <div className="flex gap-3">
+                        {item.image && (
+                          <img 
+                            src={item.image} 
+                            alt={item.name} 
+                            className="w-16 h-16 object-cover rounded"
+                          />
+                        )}
+                        <div>
+                          <p className="font-medium">{item.name}</p>
+                          <p className="text-sm text-muted-foreground">Кількість: {item.amount}</p>
+                          <p className="text-xs text-muted-foreground">ID продукту: {item.product.toString().slice(-6)}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p>{formatPrice(item.price)}</p>
+                        <p className="font-medium">{formatPrice(item.price * item.amount)}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">Немає товарів у замовленні</p>
+                )}
+              </div>
+              
+              {selectedOrder && (
+                <div className="mt-4 border-t pt-4">
+                  <div className="flex justify-between text-sm">
+                    <p>Вартість товарів:</p>
+                    <p>{formatPrice(selectedOrder.subtotal)}</p>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <p>Доставка:</p>
+                    <p>{selectedOrder.deliveryFee > 0 ? formatPrice(selectedOrder.deliveryFee) : 'Безкоштовно'}</p>
+                  </div>
+                  <div className="flex justify-between font-medium mt-2">
+                    <p>Загальна сума:</p>
+                    <p>{formatPrice(selectedOrder.totalPrice)}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
               Закрити
             </Button>
-            <Link to={`/admin/orders/${selectedOrder?._id}`} target="_blank">
-              <Button>Повний перегляд</Button>
-            </Link>
+            <Button variant="outline" onClick={() => handleUpdateStatus(selectedOrder!)}>
+              Змінити статус
+            </Button>
+            <Button variant="outline" onClick={() => handleUpdatePaymentStatus(selectedOrder!)}>
+              Статус оплати
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Payment Status Dialog */}
+      <Dialog open={isPaymentUpdateDialogOpen} onOpenChange={setIsPaymentUpdateDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Оновити статус оплати</DialogTitle>
+            <DialogDescription>Змініть статус оплати для замовлення #{selectedOrder?._id.slice(-6)}</DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Select value={newPaymentStatus} onValueChange={setNewPaymentStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder="Виберіть статус оплати" />
+              </SelectTrigger>
+              <SelectContent className="bg-white" >
+                <SelectItem value="Pending">Очікує оплати</SelectItem>
+                <SelectItem value="Paid">Оплачено</SelectItem>
+                <SelectItem value="Failed">Помилка оплати</SelectItem>
+                <SelectItem value="Refunded">Повернуто</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPaymentUpdateDialogOpen(false)}>
+              Скасувати
+            </Button>
+            <Button onClick={confirmUpdatePaymentStatus}>Зберегти</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

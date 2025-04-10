@@ -231,7 +231,9 @@ const HomePage = () => {
                         <p className="line-clamp-3">{announcement.content}</p>
                       </CardContent>
                       <CardFooter>
-                        <Button variant="outline">Детальніше</Button>
+                        <Link to={`/announcements/${announcement._id}`}>
+                          <Button variant="outline">Детальніше</Button>
+                        </Link>
                       </CardFooter>
                     </div>
                   </div>

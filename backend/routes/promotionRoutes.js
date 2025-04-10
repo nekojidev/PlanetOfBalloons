@@ -21,7 +21,7 @@ router.get("/:id", getPromotionById);
 router.post("/", authenticateUser, authorizeRoles('admin'),  createPromotion);
 
 // Оновити акцію (адмін)
-router.patch("/:id", authenticateUser, authorizeRoles('admin'),  updatePromotion);
+router.put("/:id", authenticateUser, authorizeRoles('admin'),  updatePromotion);
 
 // Видалити акцію (адмін)
 router.delete("/:id",authenticateUser, authorizeRoles('admin') ,deletePromotion);

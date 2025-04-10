@@ -187,24 +187,6 @@ const importData = async () => {
           p.name.includes('Прапор України')
         );
       }
-      // For Valentine's day promotion
-      else if (promo.title.includes('Закоханих')) {
-        relevantProducts = createdProducts.filter(p => 
-          p.name.includes('Валентина') || p.name.includes('Серце')
-        );
-      }
-      // For LED balloons
-      else if (promo.title.includes('LED')) {
-        relevantProducts = createdProducts.filter(p => 
-          p.name.includes('LED') || p.name.includes('світло')
-        );
-      }
-      // For birthday sets
-      else if (promo.title.includes('день народження')) {
-        relevantProducts = createdProducts.filter(p => 
-          p.category.toString() === categoryMap['Святкові набори']?.toString()
-        );
-      }
       
       // Add product IDs to the promotion
       promo.products = relevantProducts.map(p => p._id);

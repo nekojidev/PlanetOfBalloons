@@ -7,8 +7,8 @@ const router = express.Router()
 router.get('/', getCategories )
 router.get('/:id', getCategoriesProducts )
 router.post('/',authenticateUser, authorizeRoles('admin'), createCategory )
-router.patch('/updateCategory',authenticateUser, authorizeRoles('admin'), updateCategory )
-router.delete('/deleteCategory',authenticateUser, authorizeRoles('admin'), deleteCategory )
+router.patch('/:id',authenticateUser, authorizeRoles('admin'), updateCategory )
+router.delete('/:id',authenticateUser, authorizeRoles('admin'), deleteCategory )
 
 
 

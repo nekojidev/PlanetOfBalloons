@@ -63,7 +63,7 @@ const AdminUsers = () => {
     if (!selectedUser) return
 
     try {
-      await axios.delete("/users", { data: { userId: selectedUser._id } })
+      await axios.delete(`/users/${selectedUser._id}`)
 
       setUsers((prev) => prev.filter((u) => u._id !== selectedUser._id))
 

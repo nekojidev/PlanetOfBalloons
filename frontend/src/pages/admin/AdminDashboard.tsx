@@ -16,7 +16,8 @@ import {
   Settings,
   LayoutDashboard, 
   Tags,
-  ShoppingCart 
+  ShoppingCart,
+  MessageCircle 
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -29,6 +30,8 @@ interface DashboardStats {
   paidOrders: number
   pendingOrders: number
   cancelledOrders: number
+  totalContacts: number
+  newContacts: number
   ordersByStatus: {
     status: string
     count: number
@@ -73,13 +76,15 @@ const AdminDashboard = () => {
         setIsLoading(true);
       }
 
-      const [usersRes, productsRes, ordersRes] = await Promise.all([
+      const [usersRes, productsRes, ordersRes, contactsRes] = await Promise.all([
         axios.get("/users"),
         axios.get("/products"),
         axios.get("/orders"),
+        axios.get("/contact"),
       ])
 
       const orders = ordersRes.data;
+      const contacts = contactsRes.data.contacts;
 
       const totalRevenue = orders.reduce((sum: number, order: any) => 
         order.paymentStatus === "Paid" ? sum + order.totalPrice : sum, 0);
@@ -91,6 +96,9 @@ const AdminDashboard = () => {
       let paidOrders = 0;
       let pendingOrders = 0;
       let cancelledOrders = 0;
+
+      // Count new contacts
+      const newContacts = contacts.filter((contact: any) => contact.status === "new").length;
       
       orders.forEach((order: any) => {
         orderStatuses[order.status] = (orderStatuses[order.status] || 0) + 1;
@@ -176,6 +184,8 @@ const AdminDashboard = () => {
         paidOrders,
         pendingOrders,
         cancelledOrders,
+        totalContacts: contacts.length,
+        newContacts,
         ordersByStatus,
         ordersByPayment,
         ordersByDelivery,
@@ -313,7 +323,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* Admin Navigation */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
         <Link to="/admin">
           <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
             <CardContent className="flex flex-col items-center justify-center py-6">
@@ -354,9 +364,33 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
         </Link>
+        <Link to="/admin/promotions">
+          <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
+            <CardContent className="flex flex-col items-center justify-center py-6">
+              <ShoppingBag className="h-8 w-8 mb-2 text-primary" />
+              <p className="text-sm font-medium text-center">Акції</p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/admin/announcements">
+          <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
+            <CardContent className="flex flex-col items-center justify-center py-6">
+              <Settings className="h-8 w-8 mb-2 text-primary" />
+              <p className="text-sm font-medium text-center">Оголошення</p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/admin/contacts">
+          <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
+            <CardContent className="flex flex-col items-center justify-center py-6">
+              <MessageCircle className="h-8 w-8 mb-2 text-primary" />
+              <p className="text-sm font-medium text-center">Повідомлення</p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Користувачі</CardTitle>
@@ -402,6 +436,25 @@ const AdminDashboard = () => {
           <CardContent>
             <div className="text-2xl font-bold">{formatPrice(stats.totalRevenue)}</div>
             <p className="text-xs text-muted-foreground">Загальний дохід від оплачених замовлень</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Повідомлення</CardTitle>
+            <MessageCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalContacts}</div>
+            {stats.newContacts > 0 ? (
+              <div className="mt-1">
+                <Badge variant="default" className="bg-primary">
+                  {stats.newContacts} нових
+                </Badge>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">Немає нових повідомлень</p>
+            )}
           </CardContent>
         </Card>
       </div>

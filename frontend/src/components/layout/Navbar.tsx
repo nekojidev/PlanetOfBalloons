@@ -6,7 +6,7 @@ import { useAuthStore } from "@/store/authStore"
 import { useCartStore } from "@/store/cartStore"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "./ThemeToggle"
-import { ShoppingCart, User, Menu, X } from "lucide-react"
+import { ShoppingCart, User, Menu, X, LayoutDashboard, ShoppingBag, Tags, Users, Bell, Tag, MessageCircle, ShoppingCart as ShoppingCartIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const Navbar = () => {
@@ -23,6 +23,7 @@ const Navbar = () => {
     navigate("/login")
     closeMenu()
   }
+
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background">

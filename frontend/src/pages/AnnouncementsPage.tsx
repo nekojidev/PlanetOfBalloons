@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { formatDate } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { Calendar, Bell, ArrowRight } from "lucide-react"
+import { Link } from "react-router-dom"
 
 interface Announcement {
   _id: string
@@ -136,56 +137,60 @@ const AnnouncementsPage = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {announcements.map((announcement, index) => (
-          <Card 
-            key={announcement._id} 
-            className="h-full flex flex-col overflow-hidden group hover:shadow-lg transition-shadow duration-300"
+          <Link 
+            to={`/announcements/${announcement._id}`}
+            key={announcement._id}
           >
-            {announcement.image && (
-              <div className="relative h-56 overflow-hidden">
-                {isNewAnnouncement(announcement.startDate) && (
-                  <div className="absolute top-4 left-4 z-10">
-                    <Badge className="bg-primary/90 backdrop-blur-sm px-3 py-1">
-                      НОВЕ
-                    </Badge>
-                  </div>
-                )}
-                {isEndingSoon(announcement.endDate) && (
-                  <div className="absolute top-4 right-4 z-10">
-                    <Badge variant="destructive" className="px-3 py-1">
-                      Закінчується скоро
-                    </Badge>
-                  </div>
-                )}
-                <img
-                  src={announcement.image || "/placeholder.svg"}
-                  alt={announcement.title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-              </div>
-            )}
-            <CardHeader>
-              <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                <span>
-                  {formatDate(announcement.startDate)} - {formatDate(announcement.endDate)}
-                </span>
-              </div>
-              <CardTitle className="text-2xl group-hover:text-primary transition-colors">
-                {announcement.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-grow">
-              <div className="prose prose-sm max-w-none line-clamp-4">
-                <p>{announcement.content}</p>
-              </div>
-            </CardContent>
-            <CardFooter className="pt-4 border-t">
-              <Button size="sm" className="ml-auto gap-1">
-                <span>Детальніше</span>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </CardFooter>
-          </Card>
+            <Card 
+              className="h-full flex flex-col overflow-hidden group hover:shadow-lg transition-shadow duration-300"
+            >
+              {announcement.image && (
+                <div className="relative h-56 overflow-hidden">
+                  {isNewAnnouncement(announcement.startDate) && (
+                    <div className="absolute top-4 left-4 z-10">
+                      <Badge className="bg-primary/90 backdrop-blur-sm px-3 py-1">
+                        НОВЕ
+                      </Badge>
+                    </div>
+                  )}
+                  {isEndingSoon(announcement.endDate) && (
+                    <div className="absolute top-4 right-4 z-10">
+                      <Badge variant="destructive" className="px-3 py-1">
+                        Закінчується скоро
+                      </Badge>
+                    </div>
+                  )}
+                  <img
+                    src={announcement.image || "/placeholder.svg"}
+                    alt={announcement.title}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                </div>
+              )}
+              <CardHeader>
+                <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
+                  <Calendar className="h-4 w-4" />
+                  <span>
+                    {formatDate(announcement.startDate)} - {formatDate(announcement.endDate)}
+                  </span>
+                </div>
+                <CardTitle className="text-2xl group-hover:text-primary transition-colors">
+                  {announcement.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                <div className="prose prose-sm max-w-none line-clamp-4">
+                  <p>{announcement.content}</p>
+                </div>
+              </CardContent>
+              <CardFooter className="pt-4 border-t">
+                <Button size="sm" className="ml-auto gap-1">
+                  <span>Детальніше</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </CardFooter>
+            </Card>
+          </Link>
         ))}
       </div>
     </div>

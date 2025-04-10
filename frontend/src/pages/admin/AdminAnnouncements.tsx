@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import axios from "@/lib/axios"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 import { formatDate } from "@/lib/utils"
-import { Edit, Trash2, Plus } from "lucide-react"
+import { Edit, Trash2, Plus, Upload, X } from "lucide-react"
 
 interface Announcement {
   _id: string
@@ -48,6 +48,9 @@ const AdminAnnouncements = () => {
     endDate: "",
     isActive: true,
   })
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -76,6 +79,56 @@ const AdminAnnouncements = () => {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      
+      // Check file size (limit to 2MB)
+      const maxSize = 2 * 1024 * 1024
+      if (file.size > maxSize) {
+        toast({
+          title: "Помилка",
+          description: "Розмір зображення не повинен перевищувати 2MB",
+          variant: "destructive",
+        })
+        return
+      }
+      
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Помилка",
+          description: "Будь ласка, завантажте зображення",
+          variant: "destructive",
+        })
+        return
+      }
+      
+      setImageFile(file)
+      
+      // Create image preview
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleRemoveImage = () => {
+    setImageFile(null)
+    setImagePreview(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+    
+    // Only clear the image URL if we're not editing an existing announcement
+    // or if explicitly removing the image from an existing announcement
+    if (!selectedAnnouncement) {
+      setFormData((prev) => ({ ...prev, image: "" }))
+    }
+  }
+
   const handleSwitchChange = (checked: boolean) => {
     setFormData((prev) => ({ ...prev, isActive: checked }))
   }
@@ -92,6 +145,15 @@ const AdminAnnouncements = () => {
         endDate: new Date(announcement.endDate).toISOString().split("T")[0],
         isActive: announcement.isActive,
       })
+      
+      // Set image preview if there's an existing image
+      if (announcement.image) {
+        setImagePreview(announcement.image)
+      } else {
+        setImagePreview(null)
+      }
+      
+      setImageFile(null)
     } else {
       setSelectedAnnouncement(null)
       const today = new Date().toISOString().split("T")[0]
@@ -107,6 +169,9 @@ const AdminAnnouncements = () => {
         endDate: nextMonth.toISOString().split("T")[0],
         isActive: true,
       })
+      
+      setImagePreview(null)
+      setImageFile(null)
     }
     setIsDialogOpen(true)
   }
@@ -144,18 +209,32 @@ const AdminAnnouncements = () => {
     e.preventDefault()
 
     try {
-      const announcementData = {
-        title: formData.title,
-        content: formData.content,
-        image: formData.image,
-        startDate: formData.startDate,
-        endDate: formData.endDate,
-        isActive: formData.isActive,
+      // Create FormData object for file upload
+      const formDataToSend = new FormData()
+      formDataToSend.append("title", formData.title)
+      formDataToSend.append("content", formData.content)
+      formDataToSend.append("startDate", formData.startDate)
+      formDataToSend.append("endDate", formData.endDate)
+      formDataToSend.append("isActive", formData.isActive.toString())
+      
+      // If no new image file but there's existing image URL, keep it
+      if (!imageFile && formData.image) {
+        formDataToSend.append("image", formData.image)
+      }
+      
+      // If there's a new image file, append it
+      if (imageFile) {
+        formDataToSend.append("image", imageFile)
       }
 
+      let response
       if (selectedAnnouncement) {
         // Update existing announcement
-        const response = await axios.put(`/announcements/${selectedAnnouncement._id}`, announcementData)
+        response = await axios.put(
+          `/announcements/${selectedAnnouncement._id}`, 
+          formDataToSend,
+          { headers: { 'Content-Type': 'multipart/form-data' } }
+        )
 
         setAnnouncements((prev) =>
           prev.map((a) => (a._id === response.data.announcement._id ? response.data.announcement : a)),
@@ -167,7 +246,11 @@ const AdminAnnouncements = () => {
         })
       } else {
         // Create new announcement
-        const response = await axios.post("/announcements", announcementData)
+        response = await axios.post(
+          "/announcements", 
+          formDataToSend,
+          { headers: { 'Content-Type': 'multipart/form-data' } }
+        )
 
         setAnnouncements((prev) => [...prev, response.data.announcement])
 
@@ -300,8 +383,56 @@ const AdminAnnouncements = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="image">URL зображення (необов'язково)</Label>
-                <Input id="image" name="image" value={formData.image} onChange={handleChange} />
+                <Label htmlFor="image">Зображення (необов'язково)</Label>
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="image"
+                      name="imageUpload"
+                      type="file"
+                      ref={fileInputRef}
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex-1"
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      Завантажити зображення
+                    </Button>
+                    {(imagePreview || imageFile) && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="text-destructive"
+                        onClick={handleRemoveImage}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {imagePreview && (
+                    <div className="mt-2">
+                      <img 
+                        src={imagePreview} 
+                        alt="Попередній перегляд" 
+                        className="max-h-48 rounded-md object-cover"
+                      />
+                    </div>
+                  )}
+                  
+                  {imageFile && (
+                    <div className="text-sm text-muted-foreground">
+                      Файл: {imageFile.name} ({(imageFile.size / 1024 / 1024).toFixed(2)} MB)
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">

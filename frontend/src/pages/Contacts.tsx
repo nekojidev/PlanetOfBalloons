@@ -1,11 +1,14 @@
-import React from "react";
+import React, { useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import axios from "@/lib/axios";
 import { Button } from "../components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../components/ui/form";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Ім'я повинно містити щонайменше 2 символи" }),
@@ -15,6 +18,9 @@ const formSchema = z.object({
 });
 
 const Contacts = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -25,11 +31,29 @@ const Contacts = () => {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    // Send form data to backend
-    alert("Дякуємо за ваше повідомлення! Ми зв'яжемося з вами якнайшвидше.");
-    form.reset();
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+      setIsSubmitting(true);
+      const response = await axios.post('/contact', values);
+      
+      toast({
+        title: "Успішно надіслано",
+        description: "Дякуємо за ваше повідомлення! Ми зв'яжемося з вами якнайшвидше.",
+        variant: "default",
+      });
+      
+      form.reset();
+    } catch (error: any) {
+      console.error('Error submitting contact form:', error);
+      
+      toast({
+        title: "Помилка",
+        description: error.response?.data?.message || "Не вдалося відправити повідомлення. Будь ласка, спробуйте пізніше.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -193,7 +217,20 @@ const Contacts = () => {
                 )}
               />
               
-              <Button type="submit" className="w-full">Надіслати повідомлення</Button>
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Надсилання...
+                  </>
+                ) : (
+                  "Надіслати повідомлення"
+                )}
+              </Button>
             </form>
           </Form>
         </div>

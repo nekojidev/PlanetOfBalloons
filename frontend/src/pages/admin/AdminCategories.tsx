@@ -35,7 +35,6 @@ const AdminCategories = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [formData, setFormData] = useState({
-    id: "",
     name: "",
     description: "",
   })
@@ -71,14 +70,12 @@ const AdminCategories = () => {
     if (category) {
       setSelectedCategory(category)
       setFormData({
-        id: category._id,
         name: category.name,
         description: category.description,
       })
     } else {
       setSelectedCategory(null)
       setFormData({
-        id: "",
         name: "",
         description: "",
       })
@@ -95,7 +92,7 @@ const AdminCategories = () => {
     if (!selectedCategory) return
 
     try {
-      await axios.delete("/categories", { data: { id: selectedCategory._id } })
+      await axios.delete(`/categories/${selectedCategory._id}`)
 
       setCategories((prev) => prev.filter((c) => c._id !== selectedCategory._id))
 
@@ -120,14 +117,13 @@ const AdminCategories = () => {
 
     try {
       const categoryData = {
-        id: formData.id,
         name: formData.name,
         description: formData.description,
       }
 
       if (selectedCategory) {
         // Update existing category
-        const response = await axios.put("/categories", categoryData)
+        const response = await axios.patch(`/categories/${selectedCategory._id}`, categoryData)
 
         setCategories((prev) => prev.map((c) => (c._id === response.data.category._id ? response.data.category : c)))
 

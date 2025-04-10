@@ -23,10 +23,12 @@ import AdminOrders from "./pages/admin/AdminOrders"
 import AdminUsers from "./pages/admin/AdminUsers"
 import AdminAnnouncements from "./pages/admin/AdminAnnouncements"
 import AdminPromotions from "./pages/admin/AdminPromotions"
+import AdminContacts from "./pages/admin/AdminContacts"
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import Delivery from "./pages/Delivery"
 import Contacts from "./pages/Contacts"
 import About from "./pages/About"
+import AnnouncementsDetailPage from "./pages/AnnouncementsDetailPage"
 function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="planet-balloons-theme">
@@ -38,6 +40,7 @@ function App() {
             <Route path="products/:id" element={<ProductDetailPage />} />
             <Route path="cart" element={<CartPage />} />
             <Route path="announcements" element={<AnnouncementsPage />} />
+            <Route path="announcements/:id" element={<AnnouncementsDetailPage />} />
             <Route path="promotions" element={<PromotionsPage />} />
             <Route path="login" element={<LoginPage />} />
             <Route path="register" element={<RegisterPage />} />
@@ -63,6 +66,7 @@ function App() {
               <Route path="users" element={<AdminUsers />} />
               <Route path="announcements" element={<AdminAnnouncements />} />
               <Route path="promotions" element={<AdminPromotions />} />
+              <Route path="contacts" element={<AdminContacts />} />
             </Route>
 
             <Route path="*" element={<NotFoundPage />} />

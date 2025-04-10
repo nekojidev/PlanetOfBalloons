@@ -1,3 +1,4 @@
 {
-    "vscord.status.state.text.viewing": "writing {file_name}{file_extension}"
+    "vscord.status.state.text.viewing": "writing {file_name}{file_extension}",
+    "cSpell.language": "en,uk"
 }

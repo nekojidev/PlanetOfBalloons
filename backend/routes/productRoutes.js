@@ -20,8 +20,8 @@ router.get('/:id', getProductById);
 
 // Admin routes (protected)
 router.post('/', authenticateUser, authorizeRoles('admin'), createProduct);
-router.put('/', authenticateUser, authorizeRoles('admin'), updateProduct);
-router.delete('/', authenticateUser, authorizeRoles('admin'), deleteProduct);
+router.patch('/:id', authenticateUser, authorizeRoles('admin'), updateProduct);
+router.delete('/:id', authenticateUser, authorizeRoles('admin'), deleteProduct);
 router.patch('/toggle-popular/:id', authenticateUser, authorizeRoles('admin'), toggleProductPopularity); // Add this route
 
 export default router;

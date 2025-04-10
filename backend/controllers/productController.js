@@ -9,7 +9,7 @@ import { log } from 'console';
 export const getProducts = async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
-    const products = await Product.find()
+    const products = await Product.find({ deleted: { $ne: true } }) // Exclude deleted products
       .populate('category', 'name description')
       .skip((page - 1) * limit)
       .limit(limit);
@@ -27,9 +27,16 @@ export const getProductById = async (req, res) => {
       'category',
       'name description'
     );
+    
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
+    
+    // If the product is deleted, add a note in the response
+    if (product.deleted) {
+      product._doc.deletedNote = "This product has been removed from the catalog but is preserved for order history.";
+    }
+    
     res.status(200).json({ product });
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch product', error });
@@ -40,7 +47,10 @@ export const getProductById = async (req, res) => {
 export const getPopularProducts = async (req, res) => {
   try {
     const { limit = 8 } = req.query; // Default to 8 popular products
-    const popularProducts = await Product.find({ popular: 'true'})
+    const popularProducts = await Product.find({ 
+      popular: true,
+      deleted: { $ne: true } // Exclude deleted products
+    })
       .populate('category', 'name description')
       .limit(parseInt(limit));
     res.status(200).json({ products: popularProducts });
@@ -154,8 +164,9 @@ export const createProduct = async (req, res) => {
 
 export const updateProduct = async (req, res) => {
   try {
-    const { id, name, description, price, category, cloudinaryId, stock, image, popular } = req.body;
-    // ↑ Added popular to the destructured parameters ↑
+    const { name, description, price, category, cloudinaryId, stock, image, popular } = req.body;
+    
+    const { id } = req.params;
 
     if (!id || !name || !description || !price || !category || !stock) {
       return res
@@ -281,7 +292,7 @@ export const toggleProductPopularity = async (req, res) => {
 
 export const deleteProduct = async (req, res) => {
   try {
-    const { id } = req.body;
+    const { id } = req.params;
     if (!id) {
       return res.status(400).json({ message: 'Please provide id' });
     }
@@ -311,7 +322,11 @@ export const deleteProduct = async (req, res) => {
       await category.save();
     }
 
-    await product.deleteOne();
+    // Instead of deleting the product, we can mark it as deleted
+    // This way it remains in the database for order history, but won't appear in product listings
+    product.stock = 0; // Set stock to 0
+    product.deleted = true; // Add a 'deleted' flag (we'll need to add this to the schema)
+    await product.save();
 
     res.status(200).json({ message: 'Product deleted successfully' });
   } catch (error) {

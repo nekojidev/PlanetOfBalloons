@@ -13,7 +13,8 @@ const productSchema = new mongoose.Schema(
     },
     category: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
     stock: { type: Number, required: true, default: 0 },
-    popular: { type: Boolean, default: false } // Add this field
+    popular: { type: Boolean, default: false },
+    deleted: { type: Boolean, default: false } // Add this field to mark products as deleted
   },
   { timestamps: true }
 );

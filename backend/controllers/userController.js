@@ -65,12 +65,12 @@ export const updateUser = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const { userId } = req.params;
 
     if (!userId) {
       throw new CustomAPIError.BadRequestError("Invalid user ID");
     }
-
+    console.log(userId);
     const user = await User.findById(userId);
     if (!user) {
       throw new CustomAPIError.NotFoundError(`No user with ID: ${userId}`);

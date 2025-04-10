@@ -50,7 +50,8 @@ export const createCategory = async (req, res) => {
 
 export const updateCategory = async (req, res) => {
   try {
-    const { id, name, description } = req.body;
+    const { name, description } = req.body;
+    const { id } = req.params;
     if (!id || !name || !description) {
       return res.status(400).json({ message: 'Please provide id, name and description' });
     }
@@ -74,7 +75,7 @@ export const updateCategory = async (req, res) => {
 
 export const deleteCategory = async (req, res) => {
   try {
-    const { id } = req.body;
+    const { id } = req.params;
     if (!id) {
       return res.status(400).json({ message: 'Please provide id' });
     }
@@ -84,11 +85,6 @@ export const deleteCategory = async (req, res) => {
       return res.status(404).json({ message: 'Category not found' });
     }
 
-    // Remove all products associated with this category
-    const { products } = category;
-    if (products && products.length > 0) {
-      await Product.deleteMany({ _id: { $in: products.map((product) => product._id) } });
-    }
 
     await Category.findByIdAndDelete(id);
 

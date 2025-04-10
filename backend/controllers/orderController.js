@@ -246,7 +246,7 @@ export const createOrder = async (req, res) => {
 export const updateOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, paymentStatus } = req.body;
     
     // Validate the status value
     const validStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
@@ -254,6 +254,15 @@ export const updateOrder = async (req, res) => {
       return res.status(StatusCodes.BAD_REQUEST).json({ 
         message: "Invalid status value", 
         validStatuses 
+      });
+    }
+
+    // Validate the paymentStatus value
+    const validPaymentStatuses = ['Pending', 'Paid', 'Failed', 'Refunded'];
+    if (paymentStatus && !validPaymentStatuses.includes(paymentStatus)) {
+      return res.status(StatusCodes.BAD_REQUEST).json({ 
+        message: "Invalid payment status value", 
+        validPaymentStatuses 
       });
     }
 
@@ -285,6 +294,10 @@ export const updateOrder = async (req, res) => {
     if (status) {
       order.status = status;
     }
+
+    if (paymentStatus) {
+      order.paymentStatus = paymentStatus;
+    }
     
     // Save the updated order
     await order.save();
@@ -301,7 +314,6 @@ export const updateOrder = async (req, res) => {
     });
   }
 };
-  
 
 
 

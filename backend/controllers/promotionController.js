@@ -9,6 +9,22 @@ export const createPromotion = async (req, res) => {
         if (!title || !description || !discount || !products || !startDate || !endDate) {
           return res.status(StatusCodes.BAD_REQUEST).json({ message: "Please provide all required fields" });
         }
+        
+        // Validate discount
+        if (isNaN(discount) || discount < 0 || discount > 100) {
+          return res.status(StatusCodes.BAD_REQUEST).json({
+            message: "Invalid discount value. It must be a number between 0 and 100."
+          });
+        }
+        
+        // Validate dates
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        if (isNaN(start.getTime()) || isNaN(end.getTime()) || start >= end) {
+          return res.status(StatusCodes.BAD_REQUEST).json({
+            message: "Invalid startDate or endDate. Ensure startDate is before endDate."
+          });
+        }
     
         // Validate products
         const validProducts = await Product.find({ _id: { $in: products } });
@@ -21,8 +37,19 @@ export const createPromotion = async (req, res) => {
           if (!product.originalPrice) {
             product.originalPrice = product.price; // Store the original price
           }
-          product.price = product.price - (product.price * discount) / 100; // Apply discount
-          await product.save();
+          // Calculate discounted price consistently using the original price
+          product.price = product.originalPrice * (1 - (discount / 100)); 
+        }
+        
+        try {
+          // Use bulkSave for better efficiency
+          await Product.bulkSave(validProducts);
+        } catch (bulkError) {
+          console.error("Bulk save error:", bulkError);
+          // Fallback to individual saves if bulk operation fails
+          for (const product of validProducts) {
+            await product.save();
+          }
         }
     
         const promotion = await Promotion.create({
@@ -37,7 +64,8 @@ export const createPromotion = async (req, res) => {
     
         res.status(StatusCodes.CREATED).json({ promotion });
       } catch (error) {
-        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Failed to create promotion", error });
+        console.error("Error creating promotion:", error);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Failed to create promotion", error: error.message });
       }
 }
 export const getPromotions = async (req, res) => {
@@ -68,62 +96,178 @@ export const getPromotions = async (req, res) => {
       const { id } = req.params;
       const { title, description, discount, products, startDate, endDate, isActive } = req.body; 
   
-      if (discount === undefined || isNaN(discount) || discount < 0 || discount > 100) {
-        return res
-          .status(StatusCodes.BAD_REQUEST)
-          .json({ message: "Invalid discount value. It must be a number between 0 and 100." });
+      // Validate startDate and endDate
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        if (isNaN(start.getTime()) || isNaN(end.getTime()) || start >= end) {
+          return res.status(StatusCodes.BAD_REQUEST).json({
+            message: "Invalid startDate or endDate. Ensure startDate is before endDate."
+          });
+        }
       }
-  
+
+      // Validate discount
+      if (discount !== undefined && (isNaN(discount) || discount < 0 || discount > 100)) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message: "Invalid discount value. It must be a number between 0 and 100."
+        });
+      }
+
       const promotion = await Promotion.findById(id);
       if (!promotion) {
         return res.status(StatusCodes.NOT_FOUND).json({ message: "Promotion not found" });
       }
-  
-      // Validate products if provided
-      if (products) {
-        const validProducts = await Product.find({ _id: { $in: products } });
-        if (validProducts.length !== products.length) {
-          return res.status(StatusCodes.BAD_REQUEST).json({ message: "Invalid product IDs provided" });
+
+      if (isActive === false && promotion.isActive === true) {
+        // Revert prices of all products in the promotion
+        const productsToRevert = await Product.find({ _id: { $in: promotion.products } });
+        for (const product of productsToRevert) {
+          if (product.originalPrice) {
+            product.price = product.originalPrice; // Revert to original price
+            product.originalPrice = undefined; // Clear the original price
+          }
         }
-  
-        // Revert prices of old products
-        if (promotion.products && promotion.products.length > 0) {
-          for (const productId of promotion.products) {
-            const product = await Product.findById(productId);
-            if (product && product.originalPrice) {
+        try {
+          await Product.bulkSave(productsToRevert); // Bulk save for efficiency
+        } catch (bulkError) {
+          console.error("Bulk save error:", bulkError);
+          // Fallback to individual saves if bulk operation fails
+          for (const product of productsToRevert) {
+            await product.save();
+          }
+        }
+      } else if (isActive === true && promotion.isActive === false) {
+        // Apply discounts when promotion is reactivated
+        const productsToDiscount = await Product.find({ _id: { $in: promotion.products } });
+        for (const product of productsToDiscount) {
+          // Store original price if not already stored
+          if (!product.originalPrice) {
+            product.originalPrice = product.price;
+          }
+          // Apply discount
+          product.price = product.originalPrice * (1 - (promotion.discount / 100));
+        }
+        try {
+          await Product.bulkSave(productsToDiscount); // Bulk save for efficiency
+        } catch (bulkError) {
+          console.error("Bulk save error:", bulkError);
+          // Fallback to individual saves if bulk operation fails
+          for (const product of productsToDiscount) {
+            await product.save();
+          }
+        }
+      }
+
+      if (products) {
+        // Find products that are removed from the promotion
+        const removedProductIds = promotion.products.filter(
+          (productId) => !products.includes(productId.toString())
+        );
+        
+        if (removedProductIds.length > 0) {
+          // Revert prices of removed products
+          const productsToRevert = await Product.find({ _id: { $in: removedProductIds } });
+          for (const product of productsToRevert) {
+            if (product.originalPrice) {
               product.price = product.originalPrice; // Revert to original price
-              // Do not clear the original price to preserve it for future operations
+              product.originalPrice = undefined; // Clear the original price
+            }
+          }
+          try {
+            await Product.bulkSave(productsToRevert); // Bulk save for efficiency
+          } catch (bulkError) {
+            console.error("Bulk save error:", bulkError);
+            // Fallback to individual saves if bulk operation fails
+            for (const product of productsToRevert) {
               await product.save();
             }
           }
         }
-  
-        // Apply discount to new products
-        for (const product of validProducts) {
-          if (!product.originalPrice) {
-            product.originalPrice = product.price; // Store the original price
+
+        // Find products that are added to the promotion
+        const existingProductIds = promotion.products.map(id => id.toString());
+        const newProductIds = products.filter(id => !existingProductIds.includes(id));
+
+        if (newProductIds.length > 0) {
+          // Validate new products
+          const validProducts = await Product.find({ _id: { $in: newProductIds } });
+          if (validProducts.length !== newProductIds.length) {
+            return res.status(StatusCodes.BAD_REQUEST).json({ message: "Invalid product IDs provided" });
           }
-          product.price = product.originalPrice - (product.originalPrice * discount) / 100; // Apply discount to original price
-          await product.save();
+
+          // Apply discount to new products
+          const discountToApply = discount || promotion.discount;
+          for (const product of validProducts) {
+            if (!product.originalPrice) {
+              product.originalPrice = product.price; // Store the original price
+            }
+            product.price = product.originalPrice * (1 - (discountToApply / 100)); // Apply discount consistently
+          }
+          
+          try {
+            await Product.bulkSave(validProducts); // Bulk save for efficiency
+          } catch (bulkError) {
+            console.error("Bulk save error:", bulkError);
+            // Fallback to individual saves if bulk operation fails
+            for (const product of validProducts) {
+              await product.save();
+            }
+          }
         }
-  
+        
+        // If discount changed, update prices for existing products
+        if (discount && discount !== promotion.discount && promotion.isActive) {
+          // Get existing products that remain in the promotion
+          const remainingProductIds = existingProductIds.filter(id => products.includes(id));
+          if (remainingProductIds.length > 0) {
+            const productsToUpdate = await Product.find({ _id: { $in: remainingProductIds } });
+            for (const product of productsToUpdate) {
+              if (product.originalPrice) {
+                product.price = product.originalPrice * (1 - (discount / 100)); // Apply new discount
+              }
+            }
+            
+            try {
+              await Product.bulkSave(productsToUpdate); // Bulk save for efficiency
+            } catch (bulkError) {
+              console.error("Bulk save error:", bulkError);
+              // Fallback to individual saves if bulk operation fails
+              for (const product of productsToUpdate) {
+                await product.save();
+              }
+            }
+          }
+        }
+
         promotion.products = products; // Update the products in the promotion
       }
   
       promotion.title = title || promotion.title;
       promotion.description = description || promotion.description;
-      promotion.discount = discount || promotion.discount;
-      promotion.startDate = startDate || promotion.startDate;
-      promotion.endDate = endDate || promotion.endDate;
+      
+      if (discount) {
+        promotion.discount = discount;
+      }
+      
+      if (startDate) {
+        promotion.startDate = startDate;
+      }
+      
+      if (endDate) {
+        promotion.endDate = endDate;
+      }
+      
       promotion.isActive = isActive !== undefined ? isActive : promotion.isActive;
   
       await promotion.save();
   
       res.status(StatusCodes.OK).json({ promotion });
     } catch (error) {
+      console.error("Error updating promotion:", error);
       res
         .status(StatusCodes.INTERNAL_SERVER_ERROR)
-        .json({ message: "Failed to update promotion", error });
+        .json({ message: "Failed to update promotion", error: error.message });
     }
   };
 
@@ -131,19 +275,28 @@ export const deletePromotion = async (req, res) => {
     try {
         const { id } = req.params;
     
-        const promotion = await Promotion.findById(id).populate("products");
+        const promotion = await Promotion.findById(id);
         if (!promotion) {
           return res.status(StatusCodes.NOT_FOUND).json({ message: "Promotion not found" });
         }
     
-        if (promotion.isActive) {
-          // Revert product prices
-          for (const product of promotion.products) {
-            if (product.originalPrice) {
-              product.price = product.originalPrice; // Revert to original price
-              product.originalPrice = undefined; // Clear the original price
-              await product.save();
-            }
+        // Revert product prices regardless of promotion status
+        // This ensures all products have their prices reverted
+        const productsToRevert = await Product.find({ _id: { $in: promotion.products } });
+        for (const product of productsToRevert) {
+          if (product.originalPrice) {
+            product.price = product.originalPrice; // Revert to original price
+            product.originalPrice = undefined; // Clear the original price
+          }
+        }
+        
+        try {
+          await Product.bulkSave(productsToRevert); // Bulk save for efficiency
+        } catch (bulkError) {
+          console.error("Bulk save error:", bulkError);
+          // Fallback to individual saves if bulk operation fails
+          for (const product of productsToRevert) {
+            await product.save();
           }
         }
     
@@ -151,10 +304,13 @@ export const deletePromotion = async (req, res) => {
     
         res.status(StatusCodes.OK).json({ message: "Promotion deleted successfully" });
       } catch (error) {
-        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Failed to delete promotion", error });
+        console.error("Error deleting promotion:", error);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
+          message: "Failed to delete promotion", 
+          error: error.message 
+        });
       }
 }
-
 
 export const addProductToPromotion = async (req, res) => {
     try {
@@ -169,7 +325,11 @@ export const addProductToPromotion = async (req, res) => {
       if (!promotion) {
         return res.status(StatusCodes.NOT_FOUND).json({ message: "Promotion not found" });
       }
-  
+      
+      if (!promotion.isActive) {
+        return res.status(StatusCodes.BAD_REQUEST).json({ message: "Cannot add products to an inactive promotion" });
+      }
+
       // Validate new products
       const validProducts = await Product.find({ _id: { $in: products } });
       if (validProducts.length !== products.length) {
@@ -191,8 +351,19 @@ export const addProductToPromotion = async (req, res) => {
         if (!product.originalPrice) {
           product.originalPrice = product.price; // Store the original price
         }
-        product.price = product.price - (product.price * promotion.discount) / 100; // Apply discount
-        await product.save();
+        // Calculate new price with the discount directly from the original price
+        product.price = product.originalPrice * (1 - (promotion.discount / 100)); 
+      }
+      
+      try {
+        // Use bulkSave for better efficiency
+        await Product.bulkSave(newProducts);
+      } catch (bulkError) {
+        console.error("Bulk save error:", bulkError);
+        // Fallback to individual saves if bulk operation fails
+        for (const product of newProducts) {
+          await product.save();
+        }
       }
   
       // Add new products to the promotion
@@ -201,6 +372,7 @@ export const addProductToPromotion = async (req, res) => {
   
       res.status(StatusCodes.OK).json({ message: "Products added to promotion successfully", promotion });
     } catch (error) {
-      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Failed to add products to promotion", error });
+      console.error("Error adding products to promotion:", error);
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Failed to add products to promotion", error: error.message });
     }
   };
