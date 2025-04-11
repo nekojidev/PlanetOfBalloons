@@ -55,7 +55,7 @@ function App() {
               <Route path="orders" element={<OrdersPage />} />
               <Route path="orders/:id" element={<OrderDetailPage />} />
               <Route path="profile" element={<ProfilePage />} />
-              <Route path="payment-success" element={<PaymentSuccessPage />} />
+              {/* Removed duplicate payment-success route */}
             </Route>
 
             {/* Admin Routes */}
