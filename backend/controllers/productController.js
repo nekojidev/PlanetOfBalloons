@@ -85,43 +85,10 @@ export const createProduct = async (req, res) => {
     // Handle file upload if present
     if (imageFile) {
       try {
-        // Validate file type
-        if (!imageFile.mimetype.startsWith('image')) {
-          return res.status(400).json({ message: 'Please upload an image file' });
-        }
-        
-        // Check file size (limit to 2MB)
-        const maxSize = 2 * 1024 * 1024;
-        if (imageFile.size > maxSize) {
-          return res.status(400).json({ message: 'Image size should be less than 2MB' });
-        }
-        
-        // Create a temporary file path
-        const fs = await import('fs');
-        const path = await import('path');
-        
-        const tempFilePath = path.default.join(tmpUploadsDir, `${Date.now()}-${imageFile.name.replace(/\s+/g, '-')}`);
-        
-        // Move the uploaded file to the temp directory
-        await imageFile.mv(tempFilePath);
-        
-        // Upload to Cloudinary
-        const result = await cloudinary.uploader.upload(tempFilePath, {
-          use_filename: true,
-          folder: 'planet-of-balloons/products',
-          transformation: [
-            { width: 1000, crop: 'limit' },
-            { quality: 'auto' }
-          ]
-        });
-        
-        // Remove the temporary file
-        fs.default.unlinkSync(tempFilePath);
-        
-        // Set the image URL and cloudinaryId from the upload result
-        finalImageUrl = result.secure_url;
-        finalCloudinaryId = result.public_id;
-        
+        // Use the new uploadImageToCloudinary function instead of creating temp files
+        const result = await uploadImageToCloudinary(imageFile);
+        finalImageUrl = result.url;
+        finalCloudinaryId = result.id;
       } catch (uploadError) {
         console.error('Error uploading image to Cloudinary:', uploadError);
         return res.status(500).json({ message: 'Failed to upload image', error: uploadError.message });
@@ -195,7 +162,7 @@ export const updateProduct = async (req, res) => {
           }
         }
         
-        // Upload new image
+        // Upload new image using our direct upload function
         const result = await uploadImageToCloudinary(req.files.image);
         finalImageUrl = result.url;
         finalCloudinaryId = result.id;
@@ -358,37 +325,30 @@ const uploadImageToCloudinary = async (imageFile) => {
     throw new Error('Image size should be less than 2MB');
   }
   
-  // Import fs and path dynamically if needed
-  const fs = await import('fs');
-  const path = await import('path');
-  
-  const tempFilePath = path.default.join(tmpUploadsDir, `${Date.now()}-${imageFile.name.replace(/\s+/g, '-')}`);
-  
   try {
-    // Move the uploaded file to the temp directory
-    await imageFile.mv(tempFilePath);
-    
-    // Upload to Cloudinary
-    const result = await cloudinary.uploader.upload(tempFilePath, {
-      use_filename: true,
-      folder: 'planet-of-balloons/products',
-      transformation: [
-        { width: 1000, crop: 'limit' },
-        { quality: 'auto' }
-      ]
+    // Use a promise to properly handle the stream upload
+    return new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream({
+        folder: 'planet-of-balloons/products',
+        transformation: [
+          { width: 1000, crop: 'limit' },
+          { quality: 'auto' }
+        ]
+      }, (error, result) => {
+        if (error) {
+          return reject(new Error(`Cloudinary upload failed: ${error.message}`));
+        }
+        return resolve({
+          url: result.secure_url,
+          id: result.public_id
+        });
+      });
+      
+      // Feed the buffer to the upload stream
+      uploadStream.end(imageFile.data);
     });
-    
-    return {
-      url: result.secure_url,
-      id: result.public_id
-    };
   } catch (error) {
     console.error('Error in uploadImageToCloudinary:', error);
     throw new Error(`Failed to upload image: ${error.message}`);
-  } finally {
-    // Clean up - remove the temporary file
-    if (fs.default.existsSync(tempFilePath)) {
-      fs.default.unlinkSync(tempFilePath);
-    }
   }
 };

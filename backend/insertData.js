@@ -1,73 +1,109 @@
+import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import { connectDB } from './config/db.js';
+import https from 'https';
 import cloudinary from './config/cloudinary.js';
 import Product from './models/Product.js';
 import Category from './models/Category.js';
 import Promotion from './models/Promotion.js';
 import Announcement from './models/Announcement.js';
+
 import products from './mockData/products.js';
 import categories from './mockData/category.js';
 import promotions from './mockData/promotions.js';
 import announcements from './mockData/announcement.js';
-import https from 'https';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
 dotenv.config();
 
-// Get the directory name using ES module syntax
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const start = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log('Connected to MongoDB...');
 
-const tmpDir = path.join(__dirname, 'tmp');
-// Ensure temp directory exists
-if (!fs.existsSync(tmpDir)) {
-  fs.mkdirSync(tmpDir, { recursive: true });
-}
+    // Clear existing data
+    await Product.deleteMany();
+    await Category.deleteMany();
+    await Promotion.deleteMany();
+    await Announcement.deleteMany();
 
-// Function to download image from URL to temporary file
-const downloadImage = (url, filepath) => {
-  return new Promise((resolve, reject) => {
-    const file = fs.createWriteStream(filepath);
+    console.log('Existing data cleared. Starting import...');
     
-    https.get(url, (response) => {
-      if (response.statusCode !== 200) {
-        reject(new Error(`Failed to download image, status code: ${response.statusCode}`));
-        return;
-      }
-      
-      response.pipe(file);
-      
-      file.on('finish', () => {
-        file.close();
-        resolve(filepath);
-      });
-    }).on('error', (err) => {
-      fs.unlink(filepath, () => {}); // Delete the file if download failed
-      reject(err);
+    // Process and insert data
+    const processedCategories = await processImagesForItems(categories, 'categories');
+    const createdCategories = await Category.create(processedCategories);
+    console.log(`${createdCategories.length} categories created`);
+
+    // Map category names to MongoDB IDs
+    const categoryMap = {};
+    createdCategories.forEach(category => {
+      categoryMap[category.name] = category._id;
     });
-  });
+
+    // Process products and add valid category references
+    const processedProducts = await processImagesForItems(products, 'products');
+    const productsWithCategories = processedProducts.map(product => {
+      return {...product, category: categoryMap[product.categoryName]};
+    });
+
+    const createdProducts = await Product.create(productsWithCategories);
+    console.log(`${createdProducts.length} products created`);
+
+    // Add product references to categories
+    for (const product of createdProducts) {
+      const category = await Category.findById(product.category);
+      category.products.push(product._id);
+      await category.save();
+    }
+    
+    // Process and insert promotions
+    const processedPromotions = await processImagesForItems(promotions, 'promotions');
+    await Promotion.create(processedPromotions);
+    console.log(`${processedPromotions.length} promotions created`);
+    
+    // Process and insert announcements
+    const processedAnnouncements = await processImagesForItems(announcements, 'announcements');
+    await Announcement.create(processedAnnouncements);
+    console.log(`${processedAnnouncements.length} announcements created`);
+
+    console.log('Data import successful!');
+    process.exit(0);
+  } catch (error) {
+    console.error('Import failed:', error);
+    process.exit(1);
+  }
 };
 
-// Function to upload image to Cloudinary
-const uploadToCloudinary = async (filepath, folder) => {
+// Download image from URL directly to Cloudinary using streaming
+const uploadImageFromUrl = async (imageUrl, folder) => {
   try {
-    const result = await cloudinary.uploader.upload(filepath, {
-      use_filename: true,
-      folder: `planet-of-balloons/${folder}`,
-      transformation: [
-        { width: 1000, crop: 'limit' },
-        { quality: 'auto' }
-      ]
+    return new Promise((resolve, reject) => {
+      https.get(imageUrl, (response) => {
+        if (response.statusCode !== 200) {
+          return reject(new Error(`Failed to download image, status code: ${response.statusCode}`));
+        }
+        
+        const uploadStream = cloudinary.uploader.upload_stream({
+          folder: `planet-of-balloons/${folder}`,
+          transformation: [
+            { width: 1000, crop: 'limit' },
+            { quality: 'auto' }
+          ]
+        }, (error, result) => {
+          if (error) {
+            return reject(new Error(`Cloudinary upload failed: ${error.message}`));
+          }
+          return resolve({
+            url: result.secure_url,
+            id: result.public_id
+          });
+        });
+        
+        response.pipe(uploadStream);
+      }).on('error', (err) => {
+        reject(new Error(`Failed to download image: ${err.message}`));
+      });
     });
-    
-    return {
-      url: result.secure_url,
-      id: result.public_id
-    };
   } catch (error) {
-    console.error('Error uploading to Cloudinary:', error);
+    console.error('Error uploading from URL to Cloudinary:', error);
     throw error;
   }
 };
@@ -79,14 +115,8 @@ const processImagesForItems = async (items, folderName) => {
   for (const item of items) {
     try {
       if (item.image) {
-        const filename = `${Date.now()}-${path.basename(new URL(item.image).pathname)}`;
-        const tempFilePath = path.join(tmpDir, filename);
-        
-        // Download image from URL
-        await downloadImage(item.image, tempFilePath);
-        
-        // Upload to Cloudinary
-        const uploadResult = await uploadToCloudinary(tempFilePath, folderName);
+        // Upload directly to Cloudinary from URL
+        const uploadResult = await uploadImageFromUrl(item.image, folderName);
         
         // Replace original image URL with Cloudinary URL
         const processedItem = {
@@ -96,132 +126,18 @@ const processImagesForItems = async (items, folderName) => {
         };
         
         processedItems.push(processedItem);
-        
-        // Cleanup temp file
-        fs.unlinkSync(tempFilePath);
-        console.log(`Uploaded image for ${item.name || item.title}`);
       } else {
         processedItems.push(item);
       }
     } catch (error) {
-      console.error(`Error processing image for ${item.name || item.title}:`, error);
-      // Include item without changes if image processing fails
-      processedItems.push(item);
+      console.error(`Error processing image for item ${item.name || 'unnamed'}:`, error);
+      // Add the item without the image
+      processedItems.push({...item, image: null, cloudinaryId: null});
     }
   }
   
   return processedItems;
 };
 
-// Main import function
-const importData = async () => {
-  try {
-    await connectDB(process.env.MONGO_URI);
-    // Clear existing data
-    await Product.deleteMany();
-    await Category.deleteMany();
-    await Promotion.deleteMany();
-    await Announcement.deleteMany();
-
-    console.log('Processing product images...');
-    const processedProducts = await processImagesForItems(products, 'products');
-    
-    console.log('Processing announcement images...');
-    const processedAnnouncements = await processImagesForItems(announcements, 'announcements');
-    
-    // Skip image processing for promotions since they don't have images
-    console.log('Using promotions without image processing...');
-    const processedPromotions = promotions;
-
-    // Insert categories
-    const createdCategories = await Category.insertMany(categories);
-    
-    // Create a mapping of category names to IDs
-    const categoryMap = {};
-    createdCategories.forEach(cat => {
-      categoryMap[cat.name] = cat._id;
-    });
-
-    // Prepare products with proper category IDs
-    const productsWithCategoryIds = processedProducts.map(product => {
-      return {
-        ...product,
-        category: categoryMap[product.category] // Replace category name with ID
-      };
-    });
-
-    // Insert products
-    const createdProducts = await Product.insertMany(productsWithCategoryIds);
-
-    // Update categories with their product IDs
-    for (const category of createdCategories) {
-      const categoryProducts = createdProducts.filter(
-        product => product.category.toString() === category._id.toString()
-      );
-      
-      category.products = categoryProducts.map(product => product._id);
-      await category.save();
-    }
-    
-    // Process promotions - link them to relevant products
-    const finalPromotions = [];
-    for (const promo of processedPromotions) {
-      // Find relevant products for this promotion based on category or name
-      let relevantProducts = [];
-      
-      // For "геліві кульки" promotion, find products in that category
-      if (promo.title.includes('геліві')) {
-        relevantProducts = createdProducts.filter(p => 
-          p.category.toString() === categoryMap['Геліві кульки']?.toString()
-        );
-      } 
-      // For "фольговані кульки" promotion
-      else if (promo.title.includes('ольгова')) {
-        relevantProducts = createdProducts.filter(p => 
-          p.category.toString() === categoryMap['Фольговані кульки']?.toString()
-        );
-      }
-      // For "Прапор України" promotion
-      else if (promo.title.includes('Незалежності')) {
-        relevantProducts = createdProducts.filter(p => 
-          p.name.includes('Прапор України')
-        );
-      }
-      
-      // Add product IDs to the promotion
-      promo.products = relevantProducts.map(p => p._id);
-      finalPromotions.push(promo);
-    }
-    
-    // Insert promotions and announcements
-    await Promotion.insertMany(finalPromotions);
-    await Announcement.insertMany(processedAnnouncements);
-
-    console.log('Data Imported! All images have been uploaded to Cloudinary.');
-    process.exit();
-  } catch (error) {
-    console.error(`${error}`);
-    process.exit(1);
-  }
-};
-
-const destroyData = async () => {
-  try {
-    await Product.deleteMany();
-    await Category.deleteMany();
-    await Promotion.deleteMany();
-    await Announcement.deleteMany();
-
-    console.log('Data Destroyed!');
-    process.exit();
-  } catch (error) {
-    console.error(`${error}`);
-    process.exit(1);
-  }
-};
-
-if (process.argv[2] === '-d') {
-  destroyData();
-} else {
-  importData();
-}
+// Start the import process
+start();
