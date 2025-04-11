@@ -18,15 +18,15 @@ export const createJWT = ({payload}) => {
  export const attachCookiesToResponse =  ({res, user}) => {
     const token = createJWT({payload: user})
     const oneDay = 1000 * 60 * 60 * 24;
-    const isProd = process.env.NODE_ENV === 'production';
 
-    // Set cookie with proper settings for cross-domain
+    // Always use secure cookies in production and development
     res.cookie('token', token, {
         httpOnly: true,
         expires: new Date(Date.now() + oneDay),
-        secure: isProd,
+        secure: true, // Always use secure cookies
         signed: true,
-        sameSite: isProd ? 'none' : 'lax', // This is crucial for cross-domain cookies
+        sameSite: 'none', // Critical for cross-domain cookies in production
+        path: '/', // Ensure cookie is available on all paths
     })
 
 }

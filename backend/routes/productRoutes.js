@@ -15,7 +15,7 @@ const router = express.Router();
 
 // Public routes
 router.get('/', getProducts);
-router.get('/popular', getPopularProducts); // Add this route for popular products
+router.get('/popular', getPopularProducts); // Fix the route for popular products - ensure it's at the root level, not nested
 router.get('/:id', getProductById);
 
 // Admin routes (protected)

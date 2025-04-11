@@ -79,7 +79,6 @@ app.use((req, res, next) => {
     // Add a hook to log cookie operations
     const originalSetCookie = res.cookie;
     res.cookie = function(name, value, options) {
-      console.log(`Setting cookie: ${name}`, options);
       return originalSetCookie.call(this, name, value, options);
     };
     next();
