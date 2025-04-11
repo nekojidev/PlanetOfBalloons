@@ -80,3 +80,44 @@ export const logoutUser = async (req, res) => {
     res.status(error.statusCode || 500).json({ message: error.message || 'Server Error' });
   }
 };
+
+export const logout = async (req, res) => {
+  try {
+    // Clear the JWT cookie
+    res.cookie('token', 'logout', {
+      httpOnly: true,
+      expires: new Date(Date.now()),
+      secure: process.env.NODE_ENV === 'production',
+      signed: true,
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    });
+    
+    res.status(StatusCodes.OK).json({ msg: 'User logged out!' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
+      msg: 'Error during logout', 
+      error: error.message 
+    });
+  }
+};
+
+// Add a debug route to check authentication status
+export const checkAuthStatus = async (req, res) => {
+  try {
+    // If this route is reached, authentication was successful
+    res.status(StatusCodes.OK).json({ 
+      authenticated: true, 
+      user: {
+        userId: req.user.userId,
+        role: req.user.role,
+        name: req.user.name,
+      }
+    });
+  } catch (error) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      authenticated: false,
+      error: error.message
+    });
+  }
+};

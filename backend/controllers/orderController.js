@@ -48,25 +48,27 @@ export const getAllOrdersUser = async (req, res) => {
 
 export const getOrdersUser = async (req, res) => {
   try {
+    
     // Check authentication
     if (!req.user || !req.user.userId) {
-      return res.status(StatusCodes.UNAUTHORIZED).json({ message: "User not authenticated" });
+      console.log('Authentication failed in getOrdersUser - no user data');
+      return res.status(StatusCodes.UNAUTHORIZED).json({ 
+        message: "User not authenticated",
+        debug: { hasUser: !!req.user }
+      });
     }
     
-    
+    let userId = req.user.userId;
 
-     let userId = req.user.userId;
 
-    
     // Find orders for the specific user
     const orders = await Order.find({ user: userId })
-      .sort('-createdAt') // Sort by most recent orders first
+      .sort('-createdAt') 
       .populate({
         path: 'orderItems.product',
         select: 'name price image'
       });
     
-
     res.status(StatusCodes.OK).json(orders);
   } catch (error) {
     console.error("Error fetching user orders:", error.message);
