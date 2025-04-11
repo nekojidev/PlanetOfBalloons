@@ -11,9 +11,7 @@ const PORT =  process.env.PORT || 3000
 import express from 'express';
 const app = express();
 
-// Setup __dirname equivalent for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+
 
 //rest of packages
 import { connectDB } from './config/db.js';
@@ -25,6 +23,8 @@ import helmet from 'helmet';
 import cors from 'cors';
 import mongoSanitize from 'express-mongo-sanitize';
 import xss from 'xss-clean';
+
+
 
 //routes
 
@@ -43,19 +43,16 @@ import errorHandlerMiddleware from './middleware/errorHandlerMiddleware.js';
 import { schedulePromotionRevert } from './middleware/cronJobs.js';
 app.set('trust proxy', 1);
 
-// Updated CORS configuration to include all client domains
 app.use(cors({
-    origin: [
-        process.env.CLIENT_URL || 'http://localhost:3000',
-        process.env.SERVER_URL || 'http://localhost:5000',
-        'https://planet-of-balloons-xgaa.vercel.app',
-        'https://planet-of-balloons.vercel.app'
-    ],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    exposedHeaders: ['Set-Cookie']
+    origin: [process.env.CLIENT_URL, process.env.SERVER_URL ], 
+    credentials: true
 }))
+
+// Add middleware to set Access-Control-Allow-Credentials header
+app.use((req, res, next) => {
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    next();
+});
 
 app.use(
     rateLimiter({
@@ -74,18 +71,6 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true })) // Add this line to parse form data
 app.use(cookieParser(process.env.JWT_SECRET))
 
-// Add cookie debug middleware
-app.use((req, res, next) => {
-    // Add a hook to log cookie operations
-    const originalSetCookie = res.cookie;
-    res.cookie = function(name, value, options) {
-      return originalSetCookie.call(this, name, value, options);
-    };
-    next();
-  });
-
-// Setup static file serving
-app.use(express.static(path.join(__dirname, 'public')));
 app.use(fileUpload())
 
 
@@ -98,19 +83,6 @@ app.use('/api/v1/announcements', announcementsRoutes)
 app.use('/api/v1/promotions', promotionsRoutes)
 app.use('/api/v1/contact', contactRoutes)
 
-// Handle client-side routing for SPA
-app.get('*', (req, res, next) => {
-    // Skip API routes and static files
-    if (req.path.startsWith('/api') || req.path.includes('.')) {
-        return next();
-    }
-    // Serve index.html for client-side routing
-    const clientBuildPath = path.join(__dirname, 'public', 'index.html');
-    if (fs.existsSync(clientBuildPath)) {
-        return res.sendFile(clientBuildPath);
-    }
-    next();
-});
 
 app.use(notFoundMiddleware)
 app.use(errorHandlerMiddleware)
