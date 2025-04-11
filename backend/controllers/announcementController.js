@@ -2,6 +2,50 @@ import Announcement from "../models/Announcement.js";
 import cloudinary from '../config/cloudinary.js';
 import {tmpUploadsDir} from '../utils/tmpUploadsDir.js';
 
+// Utility function to handle image upload to Cloudinary using buffer
+const uploadImageToCloudinary = async (imageFile, folder = 'planet-of-balloons/announcements') => {
+  if (!imageFile) {
+    throw new Error('No image file provided');
+  }
+
+  // Validate file type
+  if (!imageFile.mimetype.startsWith('image')) {
+    throw new Error('Please upload an image file');
+  }
+  
+  // Check file size (limit to 2MB)
+  const maxSize = 2 * 1024 * 1024;
+  if (imageFile.size > maxSize) {
+    throw new Error('Image size should be less than 2MB');
+  }
+  
+  try {
+    // Upload directly to Cloudinary using buffer (no file system access needed)
+    const result = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream({
+        folder,
+        transformation: [
+          { width: 1000, crop: 'limit' },
+          { quality: 'auto' }
+        ]
+      }, (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      });
+      
+      uploadStream.end(imageFile.data);
+    });
+    
+    return {
+      url: result.secure_url,
+      id: result.public_id
+    };
+  } catch (error) {
+    console.error('Error in uploadImageToCloudinary:', error);
+    throw new Error(`Failed to upload image: ${error.message}`);
+  }
+};
+
 // Create a new announcement
 export const createAnnouncement = async (req, res) => {
   const { title, content, startDate, endDate, isActive } = req.body;
@@ -19,44 +63,9 @@ export const createAnnouncement = async (req, res) => {
       const imageFile = req.files.image;
       
       try {
-        // Validate file type
-        if (!imageFile.mimetype.startsWith('image')) {
-          return res.status(400).json({ message: 'Please upload an image file' });
-        }
-        
-        // Check file size (limit to 2MB)
-        const maxSize = 2 * 1024 * 1024;
-        if (imageFile.size > maxSize) {
-          return res.status(400).json({ message: 'Image size should be less than 2MB' });
-        }
-        
-        // Import fs and path dynamically
-        const fs = await import('fs');
-        const path = await import('path');
-        
-        // Create a temporary file path
-        const tempFilePath = path.default.join(tmpUploadsDir, `${Date.now()}-${imageFile.name.replace(/\s+/g, '-')}`);
-        
-        // Move the uploaded file to the temp directory
-        await imageFile.mv(tempFilePath);
-        
-        // Upload to Cloudinary
-        const result = await cloudinary.uploader.upload(tempFilePath, {
-          use_filename: true,
-          folder: 'planet-of-balloons/announcements',
-          transformation: [
-            { width: 1000, crop: 'limit' },
-            { quality: 'auto' }
-          ]
-        });
-        
-        // Remove the temporary file
-        fs.default.unlinkSync(tempFilePath);
-        
-        // Set the image URL and cloudinaryId from the upload result
-        image = result.secure_url;
-        cloudinaryId = result.public_id;
-        
+        const result = await uploadImageToCloudinary(imageFile);
+        image = result.url;
+        cloudinaryId = result.id;
       } catch (uploadError) {
         console.error('Error uploading image to Cloudinary:', uploadError);
         return res.status(500).json({ message: 'Failed to upload image', error: uploadError.message });
@@ -132,17 +141,6 @@ export const updateAnnouncement = async (req, res) => {
       const imageFile = req.files.image;
       
       try {
-        // Validate file type
-        if (!imageFile.mimetype.startsWith('image')) {
-          return res.status(400).json({ message: 'Please upload an image file' });
-        }
-        
-        // Check file size (limit to 2MB)
-        const maxSize = 2 * 1024 * 1024;
-        if (imageFile.size > maxSize) {
-          return res.status(400).json({ message: 'Image size should be less than 2MB' });
-        }
-        
         // Delete old image from Cloudinary if it exists
         if (existingAnnouncement.cloudinaryId) {
           try {
@@ -154,33 +152,9 @@ export const updateAnnouncement = async (req, res) => {
           }
         }
         
-        // Import fs and path dynamically
-        const fs = await import('fs');
-        const path = await import('path');
-        
-        // Create a temporary file path
-        const tempFilePath = path.default.join(tmpUploadsDir, `${Date.now()}-${imageFile.name.replace(/\s+/g, '-')}`);
-        
-        // Move the uploaded file to the temp directory
-        await imageFile.mv(tempFilePath);
-        
-        // Upload to Cloudinary
-        const result = await cloudinary.uploader.upload(tempFilePath, {
-          use_filename: true,
-          folder: 'planet-of-balloons/announcements',
-          transformation: [
-            { width: 1000, crop: 'limit' },
-            { quality: 'auto' }
-          ]
-        });
-        
-        // Remove the temporary file
-        fs.default.unlinkSync(tempFilePath);
-        
-        // Set the new image URL and cloudinaryId
-        image = result.secure_url;
-        cloudinaryId = result.public_id;
-        
+        const result = await uploadImageToCloudinary(imageFile);
+        image = result.url;
+        cloudinaryId = result.id;
       } catch (uploadError) {
         console.error('Error uploading image to Cloudinary:', uploadError);
         return res.status(500).json({ message: 'Failed to upload image', error: uploadError.message });
