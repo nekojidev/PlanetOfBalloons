@@ -71,9 +71,12 @@ export const getMe = async (req, res) => {
 
 export const logoutUser = async (req, res) => {
   try {
-    res.cookie('token', 'none', {
+    res.cookie('token', 'logout', {
       httpOnly: true,
       expires: new Date(Date.now() + 1000),
+      secure: true,
+      sameSite: 'none',
+      path: '/'
     });
     res.status(StatusCodes.OK).json({ message: 'User logged out' });
   } catch (error) {
@@ -87,9 +90,9 @@ export const logout = async (req, res) => {
     res.cookie('token', 'logout', {
       httpOnly: true,
       expires: new Date(Date.now()),
-      secure: process.env.NODE_ENV === 'production',
-      signed: true,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      secure: true,
+      sameSite: 'none',
+      path: '/'
     });
     
     res.status(StatusCodes.OK).json({ msg: 'User logged out!' });

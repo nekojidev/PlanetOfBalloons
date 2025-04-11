@@ -3,9 +3,9 @@ import { isTokenValid } from '../utils/jwt.js';
 import { StatusCodes } from 'http-status-codes';
 
 export const authenticateUser = async (req, res, next) => {
-
+  // Try to get token from signed cookies
   const token = req.signedCookies.token;
-
+  
   if (!token) {
     return res.status(StatusCodes.UNAUTHORIZED).json({ msg: 'Authentication Invalid - No token provided' });
   }

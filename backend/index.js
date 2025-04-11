@@ -44,13 +44,22 @@ import { schedulePromotionRevert } from './middleware/cronJobs.js';
 app.set('trust proxy', 1);
 
 app.use(cors({
-    origin: [process.env.CLIENT_URL, process.env.SERVER_URL ], 
+    origin: [
+        process.env.CLIENT_URL, 
+        process.env.SERVER_URL, 
+        'https://planet-of-balloons-xgaa.vercel.app',
+        'https://planet-of-balloons.vercel.app',
+        /\.vercel\.app$/  // Allow all vercel.app subdomains
+    ], 
     credentials: true
 }))
 
 // Add middleware to set Access-Control-Allow-Credentials header
 app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Origin", req.headers.origin || '*');
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
     next();
 });
 
