@@ -47,6 +47,7 @@ function App() {
             <Route path="delivery" element={<Delivery/>} />
             <Route path="contacts" element={<Contacts />} />
             <Route path="about" element={<About />} />
+            <Route path="payment-success" element={<PaymentSuccessPage />} />
 
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
