@@ -86,7 +86,7 @@ const HomePage = () => {
       <section className="relative bg-gradient-to-r from-primary/10 to-secondary/30 py-24">
         <div className="absolute inset-0 z-0 opacity-20">
           <img 
-            src="/balloon-background.jpg" 
+            src="/icon.svg" 
             alt="Balloons" 
             className="h-full w-full object-cover"
             onError={(e) => {
