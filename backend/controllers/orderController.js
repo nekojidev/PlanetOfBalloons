@@ -24,7 +24,7 @@ export const getAllOrdersUser = async (req, res) => {
     
     let userId = req.params.id
 
-    
+
     // Find orders for the specific user
     const orders = await Order.find({ user: userId })
       .sort('-createdAt') // Sort by most recent orders first
@@ -60,7 +60,7 @@ export const getOrdersUser = async (req, res) => {
     
     let userId = req.user.userId;
 
-
+    
     // Find orders for the specific user
     const orders = await Order.find({ user: userId })
       .sort('-createdAt') 

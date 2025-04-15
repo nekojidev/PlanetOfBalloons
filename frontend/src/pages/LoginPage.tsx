@@ -21,16 +21,40 @@ const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     clearError()
+    
+    if(!email || !password) {
+      toast({
+        title: "Помилка входу",
+        description: "Введіть електронну пошту та пароль",
+        variant: "destructive",
+      })
+      return
+    }
 
     try {
       await login(email, password)
-      toast({
-        title: "Успішний вхід",
-        description: "Ви успішно увійшли в систему",
-      })
-      navigate("/")
+      
+      const currentError = useAuthStore.getState().error
+      
+      if(!currentError) {
+        toast({
+          title: "Успішний вхід",
+          description: "Ви успішно увійшли в систему",
+        })
+        navigate("/")
+      } else {
+        toast({
+          title: "Помилка входу",
+          description: currentError,
+          variant: "destructive",
+        })
+      }
     } catch (err) {
-      // Error is handled in the store
+      toast({
+        title: "Помилка входу",
+        description: "Не вдалося увійти. Перевірте свої дані для входу.",
+        variant: "destructive",
+      })
     }
   }
 

@@ -43,20 +43,47 @@ const RegisterPage = () => {
     e.preventDefault()
     clearError()
 
+    if(!formData.name || !formData.email || !formData.phone || !formData.password || !formData.confirmPassword) {
+    
+      toast({
+        title: "Помилка реєстрації",
+        description: "Заповніть всі поля",
+        variant: "destructive",
+      })
+      return
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setPasswordError("Паролі не співпадають")
       return
     }
 
     try {
+
       await register(formData.name, formData.email, formData.phone, formData.password)
-      toast({
-        title: "Успішна реєстрація",
-        description: "Ви успішно зареєструвалися",
-      })
+      const currentError = useAuthStore.getState().error
+      if(!currentError){
+        toast({
+          title: "Успішна реєстрація",
+          description: "Ви успішно зареєструвалися",
+        })
+        navigate("/")
+      } else {
+        toast({
+          title: "Помилка реєстрації",
+          description: currentError,
+          variant: "destructive",
+        })
+        return
+      }
+
       navigate("/")
     } catch (err) {
-      // Error is handled in the store
+      toast({
+        title: "Помилка входу",
+        description: "Не вдалося увійти. Перевірте свої дані для входу.",
+        variant: "destructive",
+      })
     }
   }
 
