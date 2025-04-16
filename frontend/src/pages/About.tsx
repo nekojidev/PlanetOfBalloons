@@ -53,8 +53,8 @@ const About = () => {
             <h2 className="mb-3 text-2xl font-semibold">Наші досягнення</h2>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-2">
               <div className="rounded-lg bg-muted p-4 text-center">
-                <p className="text-3xl font-bold text-primary">14+</p>
-                <p className="text-sm text-muted-foreground">років досвіду</p>
+                <p className="text-3xl font-bold text-primary">1+</p>
+                <p className="text-sm text-muted-foreground">року досвіду</p>
               </div>
               <div className="rounded-lg bg-muted p-4 text-center">
                 <p className="text-3xl font-bold text-primary">10K+</p>
