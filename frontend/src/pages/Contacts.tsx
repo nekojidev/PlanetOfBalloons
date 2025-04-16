@@ -81,7 +81,7 @@ const Contacts = () => {
                 <div>
                   <p className="font-medium">Телефон</p>
                   <a href="tel:+380XXXXXXXXX" className="text-muted-foreground hover:text-primary">
-                    +380 XX XXX XX XX
+                  +380 969 794 344
                   </a>
                 </div>
               </div>
@@ -111,7 +111,7 @@ const Contacts = () => {
                 <div>
                   <p className="font-medium">Адреса</p>
                   <p className="text-muted-foreground">
-                    м. Київ, вул. Повітряна, 123
+                  м. Бердичів, вул. Чорновола, 8б
                   </p>
                 </div>
               </div>
