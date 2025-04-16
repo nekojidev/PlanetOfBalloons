@@ -96,7 +96,7 @@ const HomePage = () => {
         </div>
         <div className="container relative z-10 flex flex-col items-center text-center">
           <span className="rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary mb-4">
-            Створюємо святковий настрій з 2010 року
+            Створюємо святковий настрій з 2024 року
           </span>
           <h1 className="text-5xl font-bold tracking-tighter text-primary sm:text-6xl md:text-7xl">
             Планета Кульок
