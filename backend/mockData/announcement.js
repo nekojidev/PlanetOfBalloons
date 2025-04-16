@@ -2,7 +2,7 @@ const announcements = [
   {
     title: "Відкриття нового магазину кульок у Львові!",
     content: "Радо повідомляємо про відкриття нової філії нашого магазину у центрі Львова! Запрошуємо всіх бажаючих на святкове відкриття 20 травня. На вас чекають знижки, розіграші та святкові кульки у подарунок кожному відвідувачу.",
-    image: "https://sdmntprpolandcentral.oaiusercontent.com/files/00000000-e1f0-520a-8899-7d195ceeb52c/raw?se=2025-04-10T20%3A26%3A01Z&sp=r&sv=2024-08-04&sr=b&scid=faebb295-3270-5d7d-a7b4-a59d4f66dcf1&skoid=9370dd2b-ca43-4270-bed5-18b1b71f8fa0&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-04-10T05%3A33%3A19Z&ske=2025-04-11T05%3A33%3A19Z&sks=b&skv=2024-08-04&sig=XRxqNVF6H7f383EUi6L3xYUpNWUgG0upwN1ByMNm6BA%3D",
+    image: "https://res.cloudinary.com/dgxiyyxgz/image/upload/v1744313245/planet-of-balloons/announcements/1744313243931-raw_b9hbjr.png",
     startDate: new Date('2024-05-01'),
     endDate: new Date('2024-05-25'),
     isActive: true

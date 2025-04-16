@@ -57,7 +57,7 @@ const products = [
       name: "Світлові LED-кульки",
       description: "Інноваційні кульки з вбудованими LED-вогниками для вечірок у темряві. Працюють до 24 годин.",
       price: 349.99,
-      image: "https://content2.rozetka.com.ua/goods/images/big/529979201.jpg",
+      image: "https://cdn.27.ua/sc--media--prod/default/80/0b/5d/800b5d65-2656-4de8-89e0-2b2dad97f531.jpg",
       cloudinaryId: "balloon-products/led-balloons",
       category: "Святкові набори",
       stock: 20,

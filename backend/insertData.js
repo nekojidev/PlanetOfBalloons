@@ -40,9 +40,14 @@ const start = async () => {
 
     // Process products and add valid category references
     const processedProducts = await processImagesForItems(products, 'products');
+    
+    // Map category names to MongoDB IDs - using the actual 'category' field that exists in the products data
     const productsWithCategories = processedProducts.map(product => {
-      return {...product, category: categoryMap[product.categoryName]};
+      // Use the 'category' field from products.js as the categoryName to look up in our map
+      return {...product, category: categoryMap[product.category]};
     });
+    
+    console.log(`Processing ${productsWithCategories.length} products with categories`);
 
     const createdProducts = await Product.create(productsWithCategories);
     console.log(`${createdProducts.length} products created`);
@@ -76,7 +81,24 @@ const start = async () => {
 const uploadImageFromUrl = async (imageUrl, folder) => {
   try {
     return new Promise((resolve, reject) => {
-      https.get(imageUrl, (response) => {
+      // Add user-agent and referer headers to mimic a browser request
+      const options = {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'Referer': 'https://www.google.com/'
+        }
+      };
+      
+      https.get(imageUrl, options, (response) => {
+        // Check for redirects
+        if (response.statusCode === 301 || response.statusCode === 302 || response.statusCode === 307) {
+          console.log(`Following redirect for image URL: ${imageUrl} -> ${response.headers.location}`);
+          // Try again with the new location
+          return uploadImageFromUrl(response.headers.location, folder)
+            .then(resolve)
+            .catch(reject);
+        }
+        
         if (response.statusCode !== 200) {
           return reject(new Error(`Failed to download image, status code: ${response.statusCode}`));
         }
