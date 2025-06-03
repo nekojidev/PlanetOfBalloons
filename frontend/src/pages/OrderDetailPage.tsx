@@ -302,28 +302,53 @@ const OrderDetailPage = () => {
                     <span className="font-medium">Спосіб доставки:</span> {getDeliveryMethodName(order.deliveryMethod)}
                   </p>
                 )}
-                <p>
-                  <span className="font-medium">Адреса:</span> {order.shippingAddress.address}
-                </p>
-                <p>
-                  <span className="font-medium">Місто:</span> {order.shippingAddress.city}
-                </p>
-                <p>
-                  <span className="font-medium">Поштовий індекс:</span> {order.shippingAddress.postalCode}
-                </p>
+
+                {order.deliveryMethod === "pickup" ? (
+                  // For pickup delivery method, show dashes instead of address details
+                  <>
+                    <p>
+                      <span className="font-medium">Адреса:</span> -
+                    </p>
+                    <p>
+                      <span className="font-medium">Місто:</span> -
+                    </p>
+                    <p>
+                      <span className="font-medium">Поштовий індекс:</span> -
+                    </p>
+                  </>
+                ) : (
+                  // For all other delivery methods, show the address details
+                  <>
+                    <p>
+                      <span className="font-medium">Адреса:</span> {order.shippingAddress.address}
+                    </p>
+                    <p>
+                      <span className="font-medium">Місто:</span> {order.shippingAddress.city}
+                    </p>
+                    <p>
+                      <span className="font-medium">Поштовий індекс:</span> {order.shippingAddress.postalCode}
+                    </p>
+                  </>
+                )}
+
                 <p>
                   <span className="font-medium">Телефон:</span> {order.shippingAddress.phone}
                 </p>
-                {order.shippingAddress.novaPoshtaOffice && (
+
+                {/* Show Nova Poshta office only if delivery method is novaPoshta */}
+                {order.deliveryMethod === "novaPoshta" && order.shippingAddress.novaPoshtaOffice && (
                   <p>
                     <span className="font-medium">Відділення Нової Пошти:</span> {order.shippingAddress.novaPoshtaOffice}
                   </p>
                 )}
-                {order.shippingAddress.ukrPoshtaOffice && (
+
+                {/* Show Ukr Poshta office only if delivery method is ukrPoshta */}
+                {order.deliveryMethod === "ukrPoshta" && order.shippingAddress.ukrPoshtaOffice && (
                   <p>
                     <span className="font-medium">Відділення Укрпошти:</span> {order.shippingAddress.ukrPoshtaOffice}
                   </p>
                 )}
+
                 {order.notes && (
                   <p>
                     <span className="font-medium">Примітки:</span> {order.notes}

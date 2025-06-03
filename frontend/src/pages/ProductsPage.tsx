@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge"
 import { useCartStore } from "@/store/cartStore"
 import { formatPrice } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
-import { ShoppingCart, Search, Tag, ArrowRight, Package } from "lucide-react"
+import { ShoppingCart, Search, Tag, ArrowRight, Package, SortAsc, SortDesc } from "lucide-react"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface Product {
   _id: string
@@ -31,12 +32,15 @@ interface Category {
   description: string
 }
 
+type SortOption = "recommended" | "price-low-high" | "price-high-low" | "name-a-z" | "name-z-a" | "newest"
+
 const ProductsPage = () => {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [sortOption, setSortOption] = useState<SortOption>("recommended")
   const { addItem } = useCartStore()
   const { toast } = useToast()
 
@@ -76,11 +80,31 @@ const ProductsPage = () => {
     })
   }
 
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory ? product.category?._id === selectedCategory : true
-    return matchesSearch && matchesCategory
-  })
+  // Sort and filter the products
+  const filteredProducts = products
+    .filter((product) => {
+      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesCategory = selectedCategory ? product.category?._id === selectedCategory : true
+      return matchesSearch && matchesCategory
+    })
+    .sort((a, b) => {
+      switch (sortOption) {
+        case "price-low-high":
+          return a.price - b.price
+        case "price-high-low":
+          return b.price - a.price
+        case "name-a-z":
+          return a.name.localeCompare(b.name)
+        case "name-z-a":
+          return b.name.localeCompare(a.name)
+        case "newest":
+          // Assuming newer products have higher IDs, or you could add a createdAt field
+          return b._id.localeCompare(a._id)
+        default:
+          // "recommended" or any other value - use default sorting
+          return 0
+      }
+    })
 
   return (
     <div className="container py-8">
@@ -103,28 +127,47 @@ const ProductsPage = () => {
             />
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Button 
-              variant={selectedCategory === null ? "default" : "outline"} 
+          <div className="w-full md:w-1/4">
+            <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOption)}>
+              <SelectTrigger className="w-full z-10 " >
+                <SelectValue placeholder="Сортування" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup className="bg-white" >
+                  <SelectLabel>Сортування товарів</SelectLabel>
+                  <SelectItem value="recommended">Рекомендовані</SelectItem>
+                  <SelectItem value="price-low-high">Ціна: від низької до високої</SelectItem>
+                  <SelectItem value="price-high-low">Ціна: від високої до низької</SelectItem>
+                  <SelectItem value="name-a-z">Назва: А-Я</SelectItem>
+                  <SelectItem value="name-z-a">Назва: Я-А</SelectItem>
+                  <SelectItem value="newest">Спочатку новіші</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 mt-4">
+          <Button 
+            variant={selectedCategory === null ? "default" : "outline"} 
+            size="sm"
+            onClick={() => setSelectedCategory(null)}
+            className="rounded-full"
+          >
+            <Tag className="h-4 w-4 mr-1" />
+            Всі категорії
+          </Button>
+          {categories.map((category) => (
+            <Button
+              key={category._id}
+              variant={selectedCategory === category._id ? "default" : "outline"}
               size="sm"
-              onClick={() => setSelectedCategory(null)}
+              onClick={() => setSelectedCategory(category._id)}
               className="rounded-full"
             >
-              <Tag className="h-4 w-4 mr-1" />
-              Всі категорії
+              {category.name}
             </Button>
-            {categories.map((category) => (
-              <Button
-                key={category._id}
-                variant={selectedCategory === category._id ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedCategory(category._id)}
-                className="rounded-full"
-              >
-                {category.name}
-              </Button>
-            ))}
-          </div>
+          ))}
         </div>
       </div>
 

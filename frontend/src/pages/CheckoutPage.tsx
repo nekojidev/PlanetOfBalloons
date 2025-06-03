@@ -92,11 +92,20 @@ const CheckoutPage = () => {
       }))
 
       // Prepare shipping address based on delivery method
-      const shippingAddress = {
-        address: formData.address,
-        city: formData.city,
-        postalCode: formData.postalCode,
+      let shippingAddress: any = {
         phone: formData.phone,
+      }
+      
+      // For pickup, we send placeholder values for address fields
+      if (formData.deliveryMethod === 'pickup') {
+        shippingAddress.address = "-"
+        shippingAddress.city = "-"
+        shippingAddress.postalCode = "-"
+      } else {
+        // For other delivery methods, use the form data
+        shippingAddress.address = formData.address
+        shippingAddress.city = formData.city
+        shippingAddress.postalCode = formData.postalCode
       }
 
       // Add Nova Poshta or UkrPoshta specific fields if selected
@@ -247,38 +256,50 @@ const CheckoutPage = () => {
               </CardContent>
             </Card>
 
+            {/* Shipping information */}
             <Card>
               <CardHeader>
                 <CardTitle>Інформація про доставку</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Адреса</Label>
-                    <Input id="address" name="address" value={formData.address} onChange={handleChange} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="city">Місто</Label>
-                    <Input id="city" name="city" value={formData.city} onChange={handleChange} required />
-                  </div>
-                </div>
+                {/* Show address fields only if delivery method is not pickup */}
+                {formData.deliveryMethod !== "pickup" ? (
+                  <>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="address">Адреса</Label>
+                        <Input id="address" name="address" value={formData.address} onChange={handleChange} required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="city">Місто</Label>
+                        <Input id="city" name="city" value={formData.city} onChange={handleChange} required />
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="postalCode">Поштовий індекс</Label>
-                    <Input
-                      id="postalCode"
-                      name="postalCode"
-                      value={formData.postalCode}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="postalCode">Поштовий індекс</Label>
+                        <Input
+                          id="postalCode"
+                          name="postalCode"
+                          value={formData.postalCode}
+                          onChange={handleChange}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Телефон</Label>
+                        <Input id="phone" name="phone" value={formData.phone} onChange={handleChange} required />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  // For pickup, just show phone field
                   <div className="space-y-2">
                     <Label htmlFor="phone">Телефон</Label>
                     <Input id="phone" name="phone" value={formData.phone} onChange={handleChange} required />
                   </div>
-                </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="notes">Примітки до замовлення (необов'язково)</Label>
