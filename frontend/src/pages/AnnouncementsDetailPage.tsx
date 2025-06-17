@@ -86,8 +86,8 @@ const AnnouncementsDetailPage = () => {
   const shareAnnouncement = () => {
     if (navigator.share) {
       navigator.share({
-        title: announcement?.title || "Оголошення з Планета Кульок",
-        text: announcement?.content || "Перегляньте це оголошення на сайті Планета Кульок",
+        title: announcement?.title || "Оголошення з Світ кульок",
+        text: announcement?.content || "Перегляньте це оголошення на сайті  Світ кульок",
         url: window.location.href,
       })
       .catch((error) => {

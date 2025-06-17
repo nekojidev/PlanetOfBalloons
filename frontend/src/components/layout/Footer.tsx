@@ -129,7 +129,7 @@ const Footer = () => {
             </a>
           </div>
           <p className="text-center text-sm text-muted-foreground">
-            © {currentYear} Планета Кульок. Усі права захищено.
+            © {currentYear} Світ кульок. Усі права захищено.
           </p>
         </div>
       </div>

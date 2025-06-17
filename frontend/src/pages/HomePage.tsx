@@ -99,7 +99,7 @@ const HomePage = () => {
             Створюємо святковий настрій з 2024 року
           </span>
           <h1 className="text-5xl font-bold tracking-tighter text-primary sm:text-6xl md:text-7xl">
-            Планета Кульок
+             Світ кульок
           </h1>
           <p className="mt-6 max-w-2xl text-xl text-secondary-foreground">
             Ваш надійний постачальник повітряних кульок та святкових аксесуарів для будь-якого свята.

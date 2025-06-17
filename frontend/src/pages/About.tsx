@@ -10,7 +10,7 @@ const About = () => {
           <div>
             <h2 className="mb-3 text-2xl font-semibold">Наша історія</h2>
             <p className="text-muted-foreground">
-              Планета Кульок розпочала свій шлях у 2024 році як маленький магазин 
+               Світ кульок розпочав свій шлях у 2024 році як маленький магазин 
               святкових аксесуарів. З тих пір ми виросли до найбільшого постачальника 
               повітряних кульок та святкового декору в регіоні, залишаючись при цьому 
               сімейним бізнесом, який цінує кожного клієнта.
@@ -41,7 +41,7 @@ const About = () => {
           <div className="overflow-hidden rounded-lg max-w-sm mx-auto">
             <img 
               src="/images/our-team.png" 
-              alt="Команда Планета Кульок" 
+              alt="Команда Світ кульок" 
               className="h-auto w-full object-cover" 
               onError={(e) => {
                 e.currentTarget.src = "https://placehold.co/600x400?text=Наша+команда";

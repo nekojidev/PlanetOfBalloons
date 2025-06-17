@@ -30,7 +30,7 @@ const Navbar = () => {
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-6 md:gap-10">
           <Link to="/" className="flex items-center space-x-2" onClick={closeMenu}>
-            <span className="text-xl font-bold text-primary">Планета Кульок</span>
+            <span className="text-xl font-bold text-primary">Світ кульок</span>
           </Link>
 
           <nav className="hidden md:flex gap-6">

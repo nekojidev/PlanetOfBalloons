@@ -143,8 +143,8 @@ const Contacts = () => {
               allowFullScreen={true}
               loading="lazy" 
               referrerPolicy="no-referrer-when-downgrade"
-              title="Розташування магазину Планета Кульок"
-              aria-label="Карта з розташуванням магазину Планета Кульок"
+              title="Розташування магазину  Світ кульок"
+              aria-label="Карта з розташуванням магазину  Світ кульок"
               className="w-full h-full"
             />
           </div>
