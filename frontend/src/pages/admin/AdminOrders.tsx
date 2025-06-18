@@ -327,8 +327,8 @@ const AdminOrders = () => {
                     <TableCell className="font-medium">#{order._id.slice(-6)}</TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{order.user.name}</p>
-                        <p className="text-sm text-muted-foreground">{order.user.email}</p>
+                        <p className="font-medium">{order.user?.name || 'user'}</p>
+                        <p className="text-sm text-muted-foreground">{order.user?.email || 'test@gmail.com' }</p>
                       </div>
                     </TableCell>
                     <TableCell>{formatDate(order.createdAt)}</TableCell>
@@ -495,22 +495,22 @@ const AdminOrders = () => {
                   selectedOrder.orderItems.map((item, index) => (
                     <div key={index} className="flex justify-between py-2 border-b last:border-0">
                       <div className="flex gap-3">
-                        {item.product && item.product.image && (
+                        {item && item.image && (
                           <img 
-                            src={item.product.image} 
-                            alt={item.product.name} 
+                            src={item.image} 
+                            alt={item.name} 
                             className="w-16 h-16 object-cover rounded"
                           />
                         )}
                         <div>
-                          <p className="font-medium">{item.product ? item.product.name : "Невідомий товар"}</p>
+                          <p className="font-medium">{item ? item.name : "Невідомий товар"}</p>
                           <p className="text-sm text-muted-foreground">Кількість: {item.amount}</p>
-                          <p className="text-xs text-muted-foreground">ID продукту: {item.product && typeof item.product === 'object' ? item.product._id.slice(-6) : String(item.product).slice(-6)}</p>
+                          <p className="text-xs text-muted-foreground">ID продукту: {item && typeof item === 'object' ? item._id.slice(-6) : String(item).slice(-6)}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p>{item.product ? formatPrice(item.product.price) : "-"}</p>
-                        <p className="font-medium">{item.product ? formatPrice(item.product.price * item.amount) : "-"}</p>
+                        <p>{item ? formatPrice(item.price) : "-"}</p>
+                        <p className="font-medium">{item ? formatPrice(item.price * item.amount) : "-"}</p>
                       </div>
                     </div>
                   ))
