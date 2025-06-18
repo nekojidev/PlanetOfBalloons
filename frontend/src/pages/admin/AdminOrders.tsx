@@ -495,22 +495,22 @@ const AdminOrders = () => {
                   selectedOrder.orderItems.map((item, index) => (
                     <div key={index} className="flex justify-between py-2 border-b last:border-0">
                       <div className="flex gap-3">
-                        {item.image && (
+                        {item.product && item.product.image && (
                           <img 
-                            src={item.image} 
-                            alt={item.name} 
+                            src={item.product.image} 
+                            alt={item.product.name} 
                             className="w-16 h-16 object-cover rounded"
                           />
                         )}
                         <div>
-                          <p className="font-medium">{item.name}</p>
+                          <p className="font-medium">{item.product ? item.product.name : "Невідомий товар"}</p>
                           <p className="text-sm text-muted-foreground">Кількість: {item.amount}</p>
-                          <p className="text-xs text-muted-foreground">ID продукту: {item.product.toString().slice(-6)}</p>
+                          <p className="text-xs text-muted-foreground">ID продукту: {item.product && typeof item.product === 'object' ? item.product._id.slice(-6) : String(item.product).slice(-6)}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p>{formatPrice(item.price)}</p>
-                        <p className="font-medium">{formatPrice(item.price * item.amount)}</p>
+                        <p>{item.product ? formatPrice(item.product.price) : "-"}</p>
+                        <p className="font-medium">{item.product ? formatPrice(item.product.price * item.amount) : "-"}</p>
                       </div>
                     </div>
                   ))
